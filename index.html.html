@@ -1,0 +1,1318 @@
+<html lang="es"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CL001 — Dashboard Logístico 2026</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=DM+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0e1a;--surface:#111827;--surface2:#1a2235;--border:#1e2d45;--accent:#00e5ff;--accent2:#ff6b35;--accent3:#7c3aed;--text:#e2e8f0;--muted:#64748b;--green:#10b981;--red:#ef4444;--yellow:#f59e0b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 20% 0%,rgba(0,229,255,.04) 0%,transparent 50%),radial-gradient(ellipse at 80% 100%,rgba(124,58,237,.05) 0%,transparent 50%);pointer-events:none;z-index:0;}
+.container{position:relative;z-index:1;}
+.header{background:linear-gradient(90deg,var(--surface) 0%,#0f172a 100%);border-bottom:1px solid var(--border);}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.4);}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.kpi-ventas::before{background:linear-gradient(90deg,var(--accent),transparent);}
+.kpi-costos::before{background:linear-gradient(90deg,var(--accent2),transparent);}
+.kpi-ganancia::before{background:linear-gradient(90deg,var(--green),transparent);}
+.kpi-igv::before{background:linear-gradient(90deg,var(--yellow),transparent);}
+.kpi-detraccion::before{background:linear-gradient(90deg,#ec4899,transparent);}
+.kpi-facturado::before{background:linear-gradient(90deg,var(--accent3),transparent);}
+.kpi-value{font-family:'DM Mono',monospace;font-size:1.5rem;font-weight:500;letter-spacing:-0.5px;}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;}
+.chart-title{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;}
+.chart-title span.dot{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0;}
+.upload-zone{border:1.5px dashed var(--border);border-radius:10px;background:rgba(0,229,255,.03);transition:all .2s;cursor:pointer;}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:rgba(0,229,255,.07);}
+select{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:.35rem .7rem;font-size:.75rem;font-family:'Space Grotesk',sans-serif;outline:none;cursor:pointer;transition:border-color .2s;}
+select:focus{border-color:var(--accent);}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:.68rem;font-weight:600;}
+.badge-green{background:rgba(16,185,129,.15);color:var(--green);}
+.badge-red{background:rgba(239,68,68,.15);color:var(--red);}
+.badge-blue{background:rgba(0,229,255,.15);color:var(--accent);}
+.badge-yellow{background:rgba(245,158,11,.15);color:var(--yellow);}
+.badge-purple{background:rgba(124,58,237,.15);color:var(--accent3);}
+.badge-orange{background:rgba(249,115,22,.15);color:#f97316;}
+.n-factura-tag{display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:6px;font-size:.65rem;font-weight:600;font-family:'DM Mono',monospace;}
+.n-factura-si{background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.25);}
+.n-factura-no{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2);}
+.data-table{width:100%;border-collapse:collapse;font-size:.78rem;}
+.data-table th{text-align:left;padding:.55rem .9rem;font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);border-bottom:1px solid var(--border);font-weight:600;}
+.data-table td{padding:.5rem .9rem;border-bottom:1px solid rgba(30,45,69,.5);font-family:'DM Mono',monospace;}
+.data-table tr:hover td{background:rgba(255,255,255,.02);}
+.prog-bar{height:4px;border-radius:99px;background:var(--border);overflow:hidden;}
+.prog-fill{height:100%;border-radius:99px;transition:width .8s ease;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;display:inline-block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+.fade-up{animation:fadeUp .35s ease forwards;opacity:0;}
+.status-bar{font-size:.7rem;color:var(--muted);display:flex;align-items:center;gap:6px;}
+.filter-label{font-size:.72rem;color:var(--muted);white-space:nowrap;}
+/* Filter group pill */
+.filter-group{display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 8px;}
+</style>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.container{width:100%}@media (min-width: 640px){.container{max-width:640px}}@media (min-width: 768px){.container{max-width:768px}}@media (min-width: 1024px){.container{max-width:1024px}}@media (min-width: 1280px){.container{max-width:1280px}}@media (min-width: 1536px){.container{max-width:1536px}}.sticky{position:sticky}.top-0{top:0px}.z-50{z-index:50}.mx-auto{margin-left:auto;margin-right:auto}.mb-2{margin-bottom:0.5rem}.mb-3{margin-bottom:0.75rem}.mt-1\.5{margin-top:0.375rem}.mt-2{margin-top:0.5rem}.flex{display:flex}.grid{display:grid}.hidden{display:none}.min-w-0{min-width:0px}.max-w-screen-2xl{max-width:1536px}.flex-1{flex:1 1 0%}.cursor-pointer{cursor:pointer}.grid-cols-1{grid-template-columns:repeat(1, minmax(0, 1fr))}.grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.flex-wrap{flex-wrap:wrap}.items-start{align-items:flex-start}.items-center{align-items:center}.justify-between{justify-content:space-between}.gap-2{gap:0.5rem}.gap-3{gap:0.75rem}.gap-1{gap:0.25rem}.gap-4{gap:1rem}.gap-1\.5{gap:0.375rem}.space-y-1 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.25rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.25rem * var(--tw-space-y-reverse))}.space-y-4 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem * var(--tw-space-y-reverse))}.overflow-x-auto{overflow-x:auto}.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.px-3{padding-left:0.75rem;padding-right:0.75rem}.px-4{padding-left:1rem;padding-right:1rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.py-1\.5{padding-top:0.375rem;padding-bottom:0.375rem}.pb-8{padding-bottom:2rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.tracking-widest{letter-spacing:0.1em}@media (min-width: 640px){.sm\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}}@media (min-width: 1024px){.lg\:col-span-2{grid-column:span 2 / span 2}.lg\:col-span-3{grid-column:span 3 / span 3}.lg\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.lg\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.lg\:grid-cols-5{grid-template-columns:repeat(5, minmax(0, 1fr))}}@media (min-width: 1280px){.xl\:grid-cols-7{grid-template-columns:repeat(7, minmax(0, 1fr))}}</style></head>
+<body>
+
+<!-- HEADER -->
+<header class="header sticky top-0 z-50">
+  <div class="container max-w-screen-2xl mx-auto px-4 py-3 flex items-center justify-between flex-wrap gap-2">
+    <div class="flex items-center gap-3">
+      <img src="data:image/png;base64,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" alt="Corporación Lope" style="height:48px;width:auto;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,229,255,0.18));">
+      <div style="border-left:1px solid var(--border);padding-left:14px;">
+        <p style="color:var(--text);font-size:1.55rem;font-weight:700;letter-spacing:.08em;line-height:1;text-transform:uppercase;font-family:'Space Grotesk',sans-serif;">CONTROL DE VIAJES 2026</p>
+      </div>
+    </div>
+
+    <!-- Filters row -->
+    <div class="flex items-center gap-2 flex-wrap">
+      <div class="filter-group">
+        <span class="filter-label">Mes:</span>
+        <select id="filterMes" onchange="applyFilters()">
+          <option value="todos">Todos</option>
+          <option value="1">Enero</option><option value="2">Febrero</option>
+          <option value="3">Marzo</option><option value="4">Abril</option><option value="5">Mayo</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Semana:</span>
+        <select id="filterSemana" onchange="applyFilters()"><option value="todos">Todos</option><option value="2">Sem 2</option><option value="3">Sem 3</option><option value="4">Sem 4</option><option value="5">Sem 5</option><option value="6">Sem 6</option><option value="7">Sem 7</option><option value="8">Sem 8</option><option value="9">Sem 9</option><option value="10">Sem 10</option><option value="11">Sem 11</option><option value="12">Sem 12</option><option value="13">Sem 13</option><option value="14">Sem 14</option><option value="15">Sem 15</option><option value="16">Sem 16</option><option value="17">Sem 17</option><option value="18">Sem 18</option><option value="19">Sem 19</option><option value="20">Sem 20</option><option value="21">Sem 21</option><option value="22">Sem 22</option></select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Cliente:</span>
+        <select id="filterCliente" onchange="applyFilters()"><option value="todos">Todos</option><option value="ALGOSEMIC SAC">ALGOSEMIC SAC</option><option value="CARLOS CHAVEZ">CARLOS CHAVEZ</option><option value="COMERCIAL FRANLIZ SAC">COMERCIAL FRANLIZ SAC</option><option value="ENTRACAR SIERRA SAC">ENTRACAR SIERRA SAC</option><option value="FILASUR S.A.">FILASUR S.A.</option><option value="FRANLIZ SAC">FRANLIZ SAC</option><option value="INDUSTRIA TEXTIL AMAZONAS S.A.C.">INDUSTRIA TEXTIL AMAZONAS S.A.C.</option><option value="MICHAEL REYNA HUAMAN">MICHAEL REYNA HUAMAN</option><option value="REYNA HUAMAN MICHAEL">REYNA HUAMAN MICHAEL</option><option value="TEJIDOS JORGITO SAC">TEJIDOS JORGITO SAC</option><option value="TEJIDOS SAN JACINTO S.A.">TEJIDOS SAN JACINTO S.A.</option><option value="YMATEX S.A.C.">YMATEX S.A.C.</option></select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Conductor:</span>
+        <select id="filterConductor" onchange="applyFilters()"><option value="todos">Todos</option><option value="CARLOS CHAVEZ">CARLOS CHAVEZ</option><option value="DAGOBERTO">DAGOBERTO</option><option value="EDGARDO">EDGARDO</option><option value="GERLIS RIVERA">GERLIS RIVERA</option><option value="GIAN">GIAN</option><option value="GUIDO GARCILASO">GUIDO GARCILASO</option><option value="HECTOR">HECTOR</option><option value="HERNAN ASTUPARIA">HERNAN ASTUPARIA</option><option value="JHON RIVERA">JHON RIVERA</option><option value="JULIO PEDRO">JULIO PEDRO</option><option value="LEONCIO">LEONCIO</option><option value="WILDER">WILDER</option></select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Pago Propietario:</span>
+        <select id="filterPagoProp" onchange="applyFilters()">
+          <option value="todos">Todos</option>
+          <option value="SI">✅ Pagado</option>
+          <option value="NO">❌ Pendiente</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Pago Factura:</span>
+        <select id="filterPagoFact" onchange="applyFilters()">
+          <option value="todos">Todos</option>
+          <option value="SI">✅ Facturado</option>
+          <option value="NO">❌ Pendiente</option>
+        </select>
+      </div>
+      <div class="filter-group" style="border-color:rgba(16,185,129,.35);">
+        <span class="filter-label" style="color:var(--green)">N° Factura:</span>
+        <select id="filterNFactura" onchange="onFacturaSelectChange()"><option value="todos">Todas</option><option value="E001-359">🧾 E001-359</option><option value="E001-360">🧾 E001-360</option><option value="E001-361">🧾 E001-361</option><option value="E001-362">🧾 E001-362</option><option value="E001-363">🧾 E001-363</option><option value="E001-364">🧾 E001-364</option><option value="E001-365">🧾 E001-365</option><option value="E001-366">🧾 E001-366</option><option value="E001-367">🧾 E001-367</option><option value="E001-368">🧾 E001-368</option><option value="E001-369">🧾 E001-369</option><option value="E001-370">🧾 E001-370</option><option value="E001-371">🧾 E001-371</option><option value="E001-372">🧾 E001-372</option><option value="E001-373">🧾 E001-373</option><option value="E001-374">🧾 E001-374</option><option value="E001-375">🧾 E001-375</option><option value="E001-376">🧾 E001-376</option><option value="E001-377">🧾 E001-377</option><option value="E001-378">🧾 E001-378</option><option value="E001-379">🧾 E001-379</option><option value="E001-380">🧾 E001-380</option><option value="E001-381">🧾 E001-381</option><option value="E001-382">🧾 E001-382</option><option value="E001-383">🧾 E001-383</option><option value="E001-384">🧾 E001-384</option><option value="E001-385">🧾 E001-385</option><option value="E001-386">🧾 E001-386</option><option value="E001-387">🧾 E001-387</option><option value="E001-388">🧾 E001-388</option><option value="E001-389">🧾 E001-389</option><option value="E001-390">🧾 E001-390</option><option value="E001-391">🧾 E001-391</option><option value="E001-392">🧾 E001-392</option><option value="E001-393">🧾 E001-393</option><option value="E001-394">🧾 E001-394</option><option value="E001-395">🧾 E001-395</option><option value="E001-396">🧾 E001-396</option><option value="E001-397">🧾 E001-397</option><option value="E001-398">🧾 E001-398</option><option value="E001-399">🧾 E001-399</option><option value="E001-400">🧾 E001-400</option><option value="E001-401">🧾 E001-401</option><option value="E001-402">🧾 E001-402</option><option value="E001-403">🧾 E001-403</option><option value="E001-404">🧾 E001-404</option><option value="E001-405">🧾 E001-405</option><option value="E001-406">🧾 E001-406</option><option value="E001-407">🧾 E001-407</option><option value="E001-408">🧾 E001-408</option><option value="E001-409">🧾 E001-409</option><option value="E001-410">🧾 E001-410</option><option value="E001-411">🧾 E001-411</option><option value="E001-412">🧾 E001-412</option><option value="E001-413">🧾 E001-413</option><option value="E001-414">🧾 E001-414</option><option value="E001-415">🧾 E001-415</option><option value="E001-416">🧾 E001-416</option><option value="E001-417">🧾 E001-417</option><option value="E001-418">🧾 E001-418</option><option value="E001-419">🧾 E001-419</option><option value="E001-420">🧾 E001-420</option><option value="E001-421">🧾 E001-421</option><option value="E001-423">🧾 E001-423</option><option value="E001-424">🧾 E001-424</option><option value="E001-425">🧾 E001-425</option><option value="E001-426">🧾 E001-426</option><option value="E001-427">🧾 E001-427</option><option value="E001-428">🧾 E001-428</option><option value="E001-429">🧾 E001-429</option><option value="E001-430">🧾 E001-430</option><option value="E001-431">🧾 E001-431</option><option value="E001-432">🧾 E001-432</option><option value="E001-433">🧾 E001-433</option><option value="E001-434">🧾 E001-434</option><option value="E001-435">🧾 E001-435</option><option value="E001-436">🧾 E001-436</option><option value="E001-437">🧾 E001-437</option><option value="E001-438">🧾 E001-438</option><option value="E001-439">🧾 E001-439</option></select>
+      </div>
+      <button id="btnSinFactura" onclick="toggleSinFactura()" style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid rgba(239,68,68,.4);border-radius:8px;padding:4px 10px;color:var(--red);font-size:.72rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;transition:all .2s;white-space:nowrap;">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+        Sin N° Factura
+      </button>
+    </div>
+
+    <!-- Upload -->
+    <div id="uploadZone" class="upload-zone flex items-center gap-2 px-3 py-2 cursor-pointer" onclick="document.getElementById('fileInput').click()" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+      <svg width="15" height="15" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"></path></svg>
+      <div>
+        <p class="text-xs font-semibold" style="color:var(--accent)">Cargar Excel</p>
+        <p style="font-size:.65rem;color:var(--muted)">.xlsx · .xls · .csv</p>
+      </div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleFile(event)">
+    </div>
+    <!-- Save dashboard button -->
+    <div id="btnGuardar" onclick="guardarDashboard()" style="display: flex; align-items: center; gap: 6px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(16, 185, 129, 0.15)); border: 1px solid rgba(16, 185, 129, 0.5); border-radius: 8px; padding: 6px 12px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='linear-gradient(135deg,rgba(16,185,129,.3),rgba(16,185,129,.15))'" onmouseout="this.style.background='linear-gradient(135deg,rgba(16,185,129,.18),rgba(16,185,129,.08))'">
+      <svg width="15" height="15" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+      <div>
+        <p class="text-xs font-semibold" style="color:var(--green)">💾 Guardar Dashboard</p>
+        <p style="font-size:.65rem;color:var(--muted)">Con datos actualizados</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- STATUS -->
+<div class="container max-w-screen-2xl mx-auto px-4 py-1.5">
+  <div class="status-bar"><span class="live-dot"></span><span id="statusText">✅ "CL001 - CONTROL DE GUIAS-FACTURAS 2026 - DASHBOARD.xlsx" — 228 registros | Haz clic en 💾 Guardar Dashboard para conservar los datos.</span></div>
+</div>
+
+<main class="container max-w-screen-2xl mx-auto px-4 pb-8 space-y-4">
+
+  <!-- KPI ROW 1: Financieros principales -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-7 gap-3">
+    <!-- Ventas -->
+    <div class="kpi-card kpi-ventas fade-up" style="animation-delay:.00s">
+      <div class="flex items-start justify-between mb-2">
+        <p class="text-xs font-semibold uppercase tracking-widest" style="color:var(--muted)">Ventas Netas</p>
+        <svg width="14" height="14" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"></path></svg>
+      </div>
+      <p class="kpi-value" style="color:var(--accent)" id="kpiVentas">S/ 146,500</p>
+      <div class="mt-1.5"><span class="badge badge-blue" id="kpiViajes">228 viajes</span></div>
+    </div>
+    <!-- Costos -->
+    <div class="kpi-card kpi-costos fade-up" style="animation-delay:.04s">
+      <div class="flex items-start justify-between mb-2">
+        <p class="text-xs font-semibold uppercase tracking-widest" style="color:var(--muted)">Costos</p>
+        <svg width="14" height="14" fill="none" stroke="var(--accent2)" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 001.95-1.57l1.65-7.43H6"></path></svg>
+      </div>
+      <p class="kpi-value" style="color:var(--accent2)" id="kpiCostos">S/ 67,318</p>
+      <div class="mt-1.5"><span class="badge badge-red" id="kpiMargen">54.0% margen</span></div>
+    </div>
+    <!-- Ganancia -->
+    <div class="kpi-card kpi-ganancia fade-up" style="animation-delay:.08s">
+      <div class="flex items-start justify-between mb-2">
+        <p class="text-xs font-semibold uppercase tracking-widest" style="color:var(--muted)">Ganancia Neta</p>
+        <svg width="14" height="14" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M22 7l-8.5 8.5-5-5L1 18M22 7h-7M22 7v7"></path></svg>
+      </div>
+      <p class="kpi-value" style="color:var(--green)" id="kpiGanancia">S/ 79,182</p>
+      <div class="mt-1.5"><span class="badge badge-green" id="kpiROI">ROI 117.6%</span></div>
+    </div>
+    <!-- IGV -->
+    <div class="kpi-card kpi-igv fade-up" style="animation-delay:.12s">
+      <div class="flex items-start justify-between mb-2">
+        <p class="text-xs font-semibold uppercase tracking-widest" style="color:var(--muted)">Total IGV</p>
+        <svg width="14" height="14" fill="none" stroke="var(--yellow)" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"></path></svg>
+      </div>
+      <p class="kpi-value" style="color:var(--yellow)" id="kpiIGV">S/ 26,370</p>
+      <div class="mt-1.5"><span class="badge badge-yellow" id="kpiIGVpct">18.0% s/neto</span></div>
+    </div>
+    <!-- Detraccion -->
+    <div class="kpi-card kpi-detraccion fade-up" style="animation-delay:.16s">
+      <div class="flex items-start justify-between mb-2">
+        <p class="text-xs font-semibold uppercase tracking-widest" style="color:var(--muted)">Detracciones</p>
+        <svg width="14" height="14" fill="none" stroke="#ec4899" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+      </div>
+      <p class="kpi-value" style="color:#ec4899" id="kpiDetraccion">S/ 7,147</p>
+      <div class="mt-1.5"><span class="badge" style="background:rgba(236,72,153,.15);color:#ec4899" id="kpiDetpct">4.2% s/total</span></div>
+    </div>
+    <!-- Total Facturado -->
+    <div class="kpi-card kpi-facturado fade-up" style="animation-delay:.20s">
+      <div class="flex items-start justify-between mb-2">
+        <p class="text-xs font-semibold uppercase tracking-widest" style="color:var(--muted)">Total Facturado</p>
+        <svg width="14" height="14" fill="none" stroke="var(--accent3)" stroke-width="2" viewBox="0 0 24 24"><path d="M9 14l6-6m-5 1h.01M14 13h.01M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2z"></path></svg>
+      </div>
+      <p class="kpi-value" style="color:var(--accent3)" id="kpiFacturado">S/ 171,120</p>
+      <div class="mt-1.5"><span class="badge badge-purple" id="kpiFacturadoPct">Neto+IGV: S/ 146,500</span></div>
+    </div>
+    <!-- N° Factura -->
+    <div class="kpi-card fade-up" style="animation-delay:.24s;border-color:rgba(16,185,129,.25);">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),transparent);border-radius:12px 12px 0 0;"></div>
+      <div class="flex items-start justify-between mb-2">
+        <p class="text-xs font-semibold uppercase tracking-widest" style="color:var(--muted)">Servicios Facturados</p>
+        <svg width="14" height="14" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="15" y2="17"></line><polyline points="9 9 10 9 11 9"></polyline></svg>
+      </div>
+      <p class="kpi-value" style="color:var(--green)" id="kpiServFacturados">214 / 228</p>
+      <div class="mt-1.5 flex gap-1 flex-wrap">
+        <span class="badge badge-green" id="kpiServFactPct">94% facturado</span>
+        <span class="badge badge-red" id="kpiServPendiente">14 sin factura</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 1 -->
+  <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+    <!-- Bar: Ventas vs Costos por cliente (3 cols) -->
+    <div class="chart-card lg:col-span-3">
+      <div class="chart-title"><span class="dot" style="background:var(--accent)"></span>Ventas vs Costos por Cliente</div>
+      <div style="height:240px;position:relative;"><canvas id="chartBarCliente" style="box-sizing: border-box; display: block; height: 240px; width: 854px;" width="854" height="240"></canvas></div>
+    </div>
+    <!-- Donut: Viajes por cliente (2 cols) -->
+    <div class="chart-card lg:col-span-2">
+      <div class="chart-title"><span class="dot" style="background:var(--accent3)"></span>Viajes por Cliente</div>
+      <div style="height:170px;position:relative;"><canvas id="chartDonutViajes" style="box-sizing: border-box; display: block; height: 170px; width: 550px;" width="550" height="170"></canvas></div>
+      <div id="donutLegend" class="mt-2 space-y-1">
+    <div class="flex items-center justify-between gap-1">
+      <div class="flex items-center gap-1.5 min-w-0">
+        <span style="width:7px;height:7px;border-radius:50%;background:#00e5ff;flex-shrink:0;display:inline-block"></span>
+        <span class="truncate" style="color:#94a3b8;font-size:.68rem">TEJIDOS JORGITO SAC</span>
+      </div>
+      <span style="color:#e2e8f0;font-size:.68rem;font-family:monospace;flex-shrink:0">127 <span style="color:#64748b">(57.0%)</span></span>
+    </div>
+    <div class="flex items-center justify-between gap-1">
+      <div class="flex items-center gap-1.5 min-w-0">
+        <span style="width:7px;height:7px;border-radius:50%;background:#ff6b35;flex-shrink:0;display:inline-block"></span>
+        <span class="truncate" style="color:#94a3b8;font-size:.68rem">YMATEX S.A.C.</span>
+      </div>
+      <span style="color:#e2e8f0;font-size:.68rem;font-family:monospace;flex-shrink:0">33 <span style="color:#64748b">(14.8%)</span></span>
+    </div>
+    <div class="flex items-center justify-between gap-1">
+      <div class="flex items-center gap-1.5 min-w-0">
+        <span style="width:7px;height:7px;border-radius:50%;background:#7c3aed;flex-shrink:0;display:inline-block"></span>
+        <span class="truncate" style="color:#94a3b8;font-size:.68rem">TEJIDOS SAN JACINTO S.…</span>
+      </div>
+      <span style="color:#e2e8f0;font-size:.68rem;font-family:monospace;flex-shrink:0">36 <span style="color:#64748b">(16.1%)</span></span>
+    </div>
+    <div class="flex items-center justify-between gap-1">
+      <div class="flex items-center gap-1.5 min-w-0">
+        <span style="width:7px;height:7px;border-radius:50%;background:#10b981;flex-shrink:0;display:inline-block"></span>
+        <span class="truncate" style="color:#94a3b8;font-size:.68rem">INDUSTRIA TEXTIL AMAZO…</span>
+      </div>
+      <span style="color:#e2e8f0;font-size:.68rem;font-family:monospace;flex-shrink:0">7 <span style="color:#64748b">(3.1%)</span></span>
+    </div>
+    <div class="flex items-center justify-between gap-1">
+      <div class="flex items-center gap-1.5 min-w-0">
+        <span style="width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0;display:inline-block"></span>
+        <span class="truncate" style="color:#94a3b8;font-size:.68rem">ENTRACAR SIERRA SAC</span>
+      </div>
+      <span style="color:#e2e8f0;font-size:.68rem;font-family:monospace;flex-shrink:0">6 <span style="color:#64748b">(2.7%)</span></span>
+    </div>
+    <div class="flex items-center justify-between gap-1">
+      <div class="flex items-center gap-1.5 min-w-0">
+        <span style="width:7px;height:7px;border-radius:50%;background:#ec4899;flex-shrink:0;display:inline-block"></span>
+        <span class="truncate" style="color:#94a3b8;font-size:.68rem">COMERCIAL FRANLIZ SAC</span>
+      </div>
+      <span style="color:#e2e8f0;font-size:.68rem;font-family:monospace;flex-shrink:0">8 <span style="color:#64748b">(3.6%)</span></span>
+    </div>
+    <div class="flex items-center justify-between gap-1">
+      <div class="flex items-center gap-1.5 min-w-0">
+        <span style="width:7px;height:7px;border-radius:50%;background:#3b82f6;flex-shrink:0;display:inline-block"></span>
+        <span class="truncate" style="color:#94a3b8;font-size:.68rem">ALGOSEMIC SAC</span>
+      </div>
+      <span style="color:#e2e8f0;font-size:.68rem;font-family:monospace;flex-shrink:0">6 <span style="color:#64748b">(2.7%)</span></span>
+    </div></div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 2 — Mensual + Weekly (nuevo) -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <!-- Line: Evolución mensual -->
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:var(--green)"></span>Evolución Mensual — Ventas · Costos · Ganancia</div>
+      <div style="height:210px;position:relative;"><canvas id="chartLineMensual" style="box-sizing: border-box; display: block; height: 210px; width: 702px;" width="702" height="210"></canvas></div>
+    </div>
+    <!-- NEW Bar: Ventas + Servicios por mes -->
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:var(--yellow)"></span>Ventas Totales &amp; Cantidad de Servicios por Mes</div>
+      <div style="height:210px;position:relative;"><canvas id="chartBarMensualServicios" style="box-sizing: border-box; display: block; height: 210px; width: 702px;" width="702" height="210"></canvas></div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 3 — Semana (nuevo) -->
+  <div class="chart-card">
+    <div class="chart-title"><span class="dot" style="background:#f472b6)"></span>Ventas Semanales (Total Neto) &amp; N° de Servicios — 2026</div>
+    <div style="height:200px;position:relative;"><canvas id="chartBarSemanal" style="box-sizing: border-box; display: block; height: 200px; width: 1462px;" width="1462" height="200"></canvas></div>
+  </div>
+
+  <!-- CHARTS ROW 4 -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <!-- Donut: Desglose costos -->
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:var(--accent2)"></span>Desglose de Costos</div>
+      <div style="height:170px;position:relative;"><canvas id="chartDonutCostos" style="box-sizing: border-box; display: block; height: 170px; width: 448px;" width="448" height="170"></canvas></div>
+      <div id="costosLegend" class="mt-2 space-y-1">
+    <div class="flex items-center justify-between gap-1">
+      <div class="flex items-center gap-1.5"><span style="width:7px;height:7px;border-radius:50%;background:#ff6b35;display:inline-block"></span>
+      <span style="color:#94a3b8;font-size:.68rem">Combustible</span></div>
+      <span style="color:#e2e8f0;font-size:.68rem;font-family:monospace">84.5%</span>
+    </div>
+    <div class="flex items-center justify-between gap-1">
+      <div class="flex items-center gap-1.5"><span style="width:7px;height:7px;border-radius:50%;background:#7c3aed;display:inline-block"></span>
+      <span style="color:#94a3b8;font-size:.68rem">Viático</span></div>
+      <span style="color:#e2e8f0;font-size:.68rem;font-family:monospace">14.1%</span>
+    </div>
+    <div class="flex items-center justify-between gap-1">
+      <div class="flex items-center gap-1.5"><span style="width:7px;height:7px;border-radius:50%;background:#f59e0b;display:inline-block"></span>
+      <span style="color:#94a3b8;font-size:.68rem">Peaje</span></div>
+      <span style="color:#e2e8f0;font-size:.68rem;font-family:monospace">0.6%</span>
+    </div>
+    <div class="flex items-center justify-between gap-1">
+      <div class="flex items-center gap-1.5"><span style="width:7px;height:7px;border-radius:50%;background:#3b82f6;display:inline-block"></span>
+      <span style="color:#94a3b8;font-size:.68rem">Cochera</span></div>
+      <span style="color:#e2e8f0;font-size:.68rem;font-family:monospace">0.8%</span>
+    </div></div>
+    </div>
+    <!-- Bar horizontal: Conductores -->
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:var(--yellow)"></span>Viajes por Conductor</div>
+      <div style="height:200px;position:relative;"><canvas id="chartBarConductor" style="box-sizing: border-box; display: block; height: 200px; width: 448px;" width="448" height="200"></canvas></div>
+    </div>
+    <!-- Bar: Rentabilidad mensual -->
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:var(--green)"></span>Rentabilidad Mensual</div>
+      <div style="height:200px;position:relative;"><canvas id="chartBarRent" style="box-sizing: border-box; display: block; height: 200px; width: 448px;" width="448" height="200"></canvas></div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="chart-card">
+    <div class="chart-title mb-3"><span class="dot" style="background:var(--accent)"></span>Resumen por Cliente — Montos Netos sin IGV</div>
+    <div class="overflow-x-auto">
+      <table class="data-table">
+        <thead><tr>
+          <th>Cliente</th><th>Viajes</th><th>Ventas Netas</th><th>IGV</th><th>Total c/IGV</th>
+          <th>Detracción</th><th>Costos</th><th>Ganancia</th><th>Margen</th><th>Facturado</th><th>Participación</th>
+        </tr></thead>
+        <tbody id="tableClientesBody"><tr>
+      <td style="color:var(--text);font-family:'Space Grotesk';font-size:.78rem">TEJIDOS JORGITO SAC</td>
+      <td style="color:var(--accent)">127</td>
+      <td style="color:var(--accent)">S/ 73,350</td>
+      <td style="color:var(--yellow)">S/ 13,203</td>
+      <td style="color:var(--accent3)">S/ 85,403</td>
+      <td style="color:#ec4899">S/ 3,615</td>
+      <td style="color:var(--accent2)">S/ 35,271</td>
+      <td style="color:var(--green)">S/ 38,079</td>
+      <td style="color:var(--green)">51.9%</td>
+      <td><span class="n-factura-tag n-factura-no">⚠ 114/127</span></td>
+      <td style="min-width:90px">
+        <div class="flex items-center gap-2">
+          <div class="prog-bar flex-1"><div class="prog-fill" style="width:50.1%;background:var(--accent)"></div></div>
+          <span style="font-size:.65rem;color:var(--muted);flex-shrink:0">50.1%</span>
+        </div>
+      </td>
+    </tr><tr>
+      <td style="color:var(--text);font-family:'Space Grotesk';font-size:.78rem">YMATEX S.A.C.</td>
+      <td style="color:var(--accent)">33</td>
+      <td style="color:var(--accent)">S/ 26,900</td>
+      <td style="color:var(--yellow)">S/ 4,842</td>
+      <td style="color:var(--accent3)">S/ 31,142</td>
+      <td style="color:#ec4899">S/ 1,349</td>
+      <td style="color:var(--accent2)">S/ 10,487</td>
+      <td style="color:var(--green)">S/ 16,413</td>
+      <td style="color:var(--green)">61.0%</td>
+      <td><span class="n-factura-tag n-factura-no">⚠ 32/33</span></td>
+      <td style="min-width:90px">
+        <div class="flex items-center gap-2">
+          <div class="prog-bar flex-1"><div class="prog-fill" style="width:18.4%;background:var(--accent)"></div></div>
+          <span style="font-size:.65rem;color:var(--muted);flex-shrink:0">18.4%</span>
+        </div>
+      </td>
+    </tr><tr>
+      <td style="color:var(--text);font-family:'Space Grotesk';font-size:.78rem">TEJIDOS SAN JACINTO S.A.</td>
+      <td style="color:var(--accent)">36</td>
+      <td style="color:var(--accent)">S/ 23,600</td>
+      <td style="color:var(--yellow)">S/ 4,248</td>
+      <td style="color:var(--accent3)">S/ 27,848</td>
+      <td style="color:#ec4899">S/ 1,114</td>
+      <td style="color:var(--accent2)">S/ 9,382</td>
+      <td style="color:var(--green)">S/ 14,218</td>
+      <td style="color:var(--green)">60.2%</td>
+      <td><span class="n-factura-tag n-factura-si">✓ 36/36</span></td>
+      <td style="min-width:90px">
+        <div class="flex items-center gap-2">
+          <div class="prog-bar flex-1"><div class="prog-fill" style="width:16.1%;background:var(--accent)"></div></div>
+          <span style="font-size:.65rem;color:var(--muted);flex-shrink:0">16.1%</span>
+        </div>
+      </td>
+    </tr><tr>
+      <td style="color:var(--text);font-family:'Space Grotesk';font-size:.78rem">INDUSTRIA TEXTIL AMAZONAS S.A.C.</td>
+      <td style="color:var(--accent)">7</td>
+      <td style="color:var(--accent)">S/ 5,800</td>
+      <td style="color:var(--yellow)">S/ 1,044</td>
+      <td style="color:var(--accent3)">S/ 6,844</td>
+      <td style="color:#ec4899">S/ 274</td>
+      <td style="color:var(--accent2)">S/ 2,800</td>
+      <td style="color:var(--green)">S/ 3,000</td>
+      <td style="color:var(--green)">51.7%</td>
+      <td><span class="n-factura-tag n-factura-si">✓ 7/7</span></td>
+      <td style="min-width:90px">
+        <div class="flex items-center gap-2">
+          <div class="prog-bar flex-1"><div class="prog-fill" style="width:4.0%;background:var(--accent)"></div></div>
+          <span style="font-size:.65rem;color:var(--muted);flex-shrink:0">4.0%</span>
+        </div>
+      </td>
+    </tr><tr>
+      <td style="color:var(--text);font-family:'Space Grotesk';font-size:.78rem">ENTRACAR SIERRA SAC</td>
+      <td style="color:var(--accent)">6</td>
+      <td style="color:var(--accent)">S/ 5,300</td>
+      <td style="color:var(--yellow)">S/ 954</td>
+      <td style="color:var(--accent3)">S/ 6,254</td>
+      <td style="color:#ec4899">S/ 250</td>
+      <td style="color:var(--accent2)">S/ 2,400</td>
+      <td style="color:var(--green)">S/ 2,900</td>
+      <td style="color:var(--green)">54.7%</td>
+      <td><span class="n-factura-tag n-factura-si">✓ 6/6</span></td>
+      <td style="min-width:90px">
+        <div class="flex items-center gap-2">
+          <div class="prog-bar flex-1"><div class="prog-fill" style="width:3.6%;background:var(--accent)"></div></div>
+          <span style="font-size:.65rem;color:var(--muted);flex-shrink:0">3.6%</span>
+        </div>
+      </td>
+    </tr><tr>
+      <td style="color:var(--text);font-family:'Space Grotesk';font-size:.78rem">COMERCIAL FRANLIZ SAC</td>
+      <td style="color:var(--accent)">8</td>
+      <td style="color:var(--accent)">S/ 5,000</td>
+      <td style="color:var(--yellow)">S/ 900</td>
+      <td style="color:var(--accent3)">S/ 5,900</td>
+      <td style="color:#ec4899">S/ 236</td>
+      <td style="color:var(--accent2)">S/ 3,009</td>
+      <td style="color:var(--green)">S/ 1,992</td>
+      <td style="color:var(--yellow)">39.8%</td>
+      <td><span class="n-factura-tag n-factura-si">✓ 8/8</span></td>
+      <td style="min-width:90px">
+        <div class="flex items-center gap-2">
+          <div class="prog-bar flex-1"><div class="prog-fill" style="width:3.4%;background:var(--accent)"></div></div>
+          <span style="font-size:.65rem;color:var(--muted);flex-shrink:0">3.4%</span>
+        </div>
+      </td>
+    </tr><tr>
+      <td style="color:var(--text);font-family:'Space Grotesk';font-size:.78rem">ALGOSEMIC SAC</td>
+      <td style="color:var(--accent)">6</td>
+      <td style="color:var(--accent)">S/ 3,000</td>
+      <td style="color:var(--yellow)">S/ 540</td>
+      <td style="color:var(--accent3)">S/ 3,540</td>
+      <td style="color:#ec4899">S/ 142</td>
+      <td style="color:var(--accent2)">S/ 2,161</td>
+      <td style="color:var(--green)">S/ 839</td>
+      <td style="color:var(--yellow)">28.0%</td>
+      <td><span class="n-factura-tag n-factura-si">✓ 6/6</span></td>
+      <td style="min-width:90px">
+        <div class="flex items-center gap-2">
+          <div class="prog-bar flex-1"><div class="prog-fill" style="width:2.0%;background:var(--accent)"></div></div>
+          <span style="font-size:.65rem;color:var(--muted);flex-shrink:0">2.0%</span>
+        </div>
+      </td>
+    </tr><tr>
+      <td style="color:var(--text);font-family:'Space Grotesk';font-size:.78rem">CARLOS CHAVEZ</td>
+      <td style="color:var(--accent)">1</td>
+      <td style="color:var(--accent)">S/ 900</td>
+      <td style="color:var(--yellow)">S/ 162</td>
+      <td style="color:var(--accent3)">S/ 1,062</td>
+      <td style="color:#ec4899">S/ 42</td>
+      <td style="color:var(--accent2)">S/ 400</td>
+      <td style="color:var(--green)">S/ 500</td>
+      <td style="color:var(--green)">55.6%</td>
+      <td><span class="n-factura-tag n-factura-si">✓ 1/1</span></td>
+      <td style="min-width:90px">
+        <div class="flex items-center gap-2">
+          <div class="prog-bar flex-1"><div class="prog-fill" style="width:0.6%;background:var(--accent)"></div></div>
+          <span style="font-size:.65rem;color:var(--muted);flex-shrink:0">0.6%</span>
+        </div>
+      </td>
+    </tr><tr>
+      <td style="color:var(--text);font-family:'Space Grotesk';font-size:.78rem">REYNA HUAMAN MICHAEL</td>
+      <td style="color:var(--accent)">1</td>
+      <td style="color:var(--accent)">S/ 700</td>
+      <td style="color:var(--yellow)">S/ 126</td>
+      <td style="color:var(--accent3)">S/ 826</td>
+      <td style="color:#ec4899">S/ 33</td>
+      <td style="color:var(--accent2)">S/ 400</td>
+      <td style="color:var(--green)">S/ 300</td>
+      <td style="color:var(--yellow)">42.9%</td>
+      <td><span class="n-factura-tag n-factura-si">✓ 1/1</span></td>
+      <td style="min-width:90px">
+        <div class="flex items-center gap-2">
+          <div class="prog-bar flex-1"><div class="prog-fill" style="width:0.5%;background:var(--accent)"></div></div>
+          <span style="font-size:.65rem;color:var(--muted);flex-shrink:0">0.5%</span>
+        </div>
+      </td>
+    </tr><tr>
+      <td style="color:var(--text);font-family:'Space Grotesk';font-size:.78rem">MICHAEL REYNA HUAMAN</td>
+      <td style="color:var(--accent)">1</td>
+      <td style="color:var(--accent)">S/ 700</td>
+      <td style="color:var(--yellow)">S/ 126</td>
+      <td style="color:var(--accent3)">S/ 826</td>
+      <td style="color:#ec4899">S/ 33</td>
+      <td style="color:var(--accent2)">S/ 400</td>
+      <td style="color:var(--green)">S/ 300</td>
+      <td style="color:var(--yellow)">42.9%</td>
+      <td><span class="n-factura-tag n-factura-si">✓ 1/1</span></td>
+      <td style="min-width:90px">
+        <div class="flex items-center gap-2">
+          <div class="prog-bar flex-1"><div class="prog-fill" style="width:0.5%;background:var(--accent)"></div></div>
+          <span style="font-size:.65rem;color:var(--muted);flex-shrink:0">0.5%</span>
+        </div>
+      </td>
+    </tr><tr>
+      <td style="color:var(--text);font-family:'Space Grotesk';font-size:.78rem">FILASUR S.A.</td>
+      <td style="color:var(--accent)">1</td>
+      <td style="color:var(--accent)">S/ 650</td>
+      <td style="color:var(--yellow)">S/ 117</td>
+      <td style="color:var(--accent3)">S/ 767</td>
+      <td style="color:#ec4899">S/ 31</td>
+      <td style="color:var(--accent2)">S/ 209</td>
+      <td style="color:var(--green)">S/ 442</td>
+      <td style="color:var(--green)">67.9%</td>
+      <td><span class="n-factura-tag n-factura-si">✓ 1/1</span></td>
+      <td style="min-width:90px">
+        <div class="flex items-center gap-2">
+          <div class="prog-bar flex-1"><div class="prog-fill" style="width:0.4%;background:var(--accent)"></div></div>
+          <span style="font-size:.65rem;color:var(--muted);flex-shrink:0">0.4%</span>
+        </div>
+      </td>
+    </tr><tr>
+      <td style="color:var(--text);font-family:'Space Grotesk';font-size:.78rem">FRANLIZ SAC</td>
+      <td style="color:var(--accent)">1</td>
+      <td style="color:var(--accent)">S/ 600</td>
+      <td style="color:var(--yellow)">S/ 108</td>
+      <td style="color:var(--accent3)">S/ 708</td>
+      <td style="color:#ec4899">S/ 28</td>
+      <td style="color:var(--accent2)">S/ 400</td>
+      <td style="color:var(--green)">S/ 200</td>
+      <td style="color:var(--yellow)">33.3%</td>
+      <td><span class="n-factura-tag n-factura-si">✓ 1/1</span></td>
+      <td style="min-width:90px">
+        <div class="flex items-center gap-2">
+          <div class="prog-bar flex-1"><div class="prog-fill" style="width:0.4%;background:var(--accent)"></div></div>
+          <span style="font-size:.65rem;color:var(--muted);flex-shrink:0">0.4%</span>
+        </div>
+      </td>
+    </tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ── CHART DEFAULTS ────────────────────────────────────────────────────────────
+Chart.defaults.color='#64748b';
+Chart.defaults.font.family="'Space Grotesk',sans-serif";
+Chart.defaults.font.size=11;
+const COLORS=['#00e5ff','#ff6b35','#7c3aed','#10b981','#f59e0b','#ec4899','#3b82f6','#06b6d4','#84cc16','#f97316'];
+const MN=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const GRID={color:'rgba(30,45,69,0.8)',drawBorder:false};
+const TICK={color:'#64748b'};
+const TT={backgroundColor:'#111827',borderColor:'#1e2d45',borderWidth:1,padding:10,titleColor:'#e2e8f0',bodyColor:'#94a3b8',titleFont:{family:"'Space Grotesk'",size:12,weight:'600'},bodyFont:{family:"'DM Mono'",size:11},cornerRadius:8,displayColors:true,boxWidth:10,boxHeight:10};
+
+let rawData=[], charts={};
+
+// ── BUILT-IN DATA ─────────────────────────────────────────────────────────────
+// [n, fecha, mes, semana_iso, empresa_pagador, conductor, total_neto, igv, total_con_igv, detraccion, combustible, viatico, conductor_gasto, peaje, cochera, total_gasto, rentabilidad, pago_propietario, pago_factura, n_factura]
+const BUILTIN=[
+[1,'2026-01-08',1,2,'COMERCIAL FRANLIZ SAC','HECTOR',600,108,708,28.32,250,30,0,0,0,400,200,'SI','SI','E001-359'],
+[2,'2026-01-12',1,3,'TEJIDOS JORGITO SAC','LEONCIO',450,81,531,21.240000000000002,100,20,0,0,0,220,230,'SI','SI','E001-371'],
+[3,'2026-01-13',1,3,'TEJIDOS JORGITO SAC','LEONCIO',550,99,649,25.96,100,20,0,0,0,220,330,'SI','SI','E001-371'],
+[4,'2026-01-13',1,3,'TEJIDOS SAN JACINTO S.A.','WILDER',700,126,826,33.04,72.8,25,0,0,0,197.8,502.2,'SI','SI','E001-361'],
+[5,'2026-01-13',1,3,'YMATEX S.A.C.','DAGOBERTO',1050,189,1239,49.56,250,30,0,0,0,400,650,'SI','SI','E001-360'],
+[7,'2026-01-13',1,3,'YMATEX S.A.C.','JULIO PEDRO',1050,189,1239,49.56,250,30,0,0,0,400,650,'SI','SI','E001-360'],
+[9,'2026-01-13',1,3,'TEJIDOS JORGITO SAC','WILDER',550,99,649,25.96,72.8,25,0,0,0,197.8,352.2,'SI','SI','E001-371'],
+[10,'2026-01-14',1,3,'TEJIDOS SAN JACINTO S.A.','LEONCIO',700,126,826,33.04,125,15,0,0,0,240,460,'SI','SI','E001-361'],
+[11,'2026-01-14',1,3,'TEJIDOS SAN JACINTO S.A.','LEONCIO',700,126,826,33.04,125,15,0,0,0,240,460,'SI','SI','E001-361'],
+[12,'2026-01-15',1,3,'TEJIDOS JORGITO SAC','LEONCIO',550,99,649,25.96,100,10,0,0,0,210,340,'SI','SI','E001-371'],
+[13,'2026-01-15',1,3,'YMATEX S.A.C.','WILDER',1050,189,1239,49.56,72.8,50,0,0,0,222.8,827.2,'SI','SI','E001-360'],
+[14,'2026-01-15',1,3,'TEJIDOS SAN JACINTO S.A.','GUIDO GARCILASO',700,126,826,33.04,250,30,0,0,0,400,300,'SI','SI','E001-362'],
+[15,'2026-01-15',1,3,'TEJIDOS JORGITO SAC','LEONCIO',450,81,531,21.240000000000002,100,10,0,0,0,210,240,'SI','SI','E001-371'],
+[12,'2026-01-15',1,3,'TEJIDOS SAN JACINTO S.A.','GUIDO GARCILASO',700,126,826,33.04,250,30,0,0,0,400,300,'SI','SI','E001-362'],
+[17,'2026-01-16',1,3,'YMATEX S.A.C.','HECTOR',850,153,1003,40.12,250,30,0,0,0,400,450,'SI','SI','E001-363'],
+[18,'2026-01-17',1,3,'ALGOSEMIC SAC','HECTOR',500,90,590,23.6,250,30,0,0,0,400,100,'SI','SI','E001-364'],
+[19,'2026-01-19',1,4,'TEJIDOS JORGITO SAC','WILDER',550,99,649,25.96,72.8,10,0,0,0,182.8,367.2,'SI','SI','E001-371'],
+[20,'2026-01-19',1,4,'TEJIDOS SAN JACINTO S.A.','LEONCIO',700,126,826,33.04,140,20,0,0,0,260,440,'SI','SI','E001-365'],
+[21,'2026-01-19',1,4,'TEJIDOS JORGITO SAC','WILDER',450,81,531,21.240000000000002,72.8,10,0,0,0,182.8,267.2,'SI','SI','E001-371'],
+[22,'2026-01-20',1,4,'TEJIDOS SAN JACINTO S.A.','LEONCIO',700,126,826,33.04,130,10,0,0,0,240,460,'SI','SI','E001-365'],
+[23,'2026-01-20',1,4,'TEJIDOS JORGITO SAC','WILDER',550,99,649,25.96,51.14,20,0,0,10,181.14,368.86,'SI','SI','E001-371'],
+[24,'2026-01-20',1,4,'TEJIDOS SAN JACINTO S.A.','LEONCIO',700,126,826,33.04,130,10,0,0,0,240,460,'SI','SI','E001-365'],
+[25,'2026-01-20',1,4,'TEJIDOS SAN JACINTO S.A.','LEONCIO',700,126,826,33.04,100,20,0,0,0,220,480,'SI','SI','E001-367'],
+[26,'2026-01-21',1,4,'TEJIDOS SAN JACINTO S.A.','LEONCIO',700,126,826,33.04,100,20,0,0,0,220,480,'SI','SI','E001-367'],
+[27,'2026-01-21',1,4,'FRANLIZ SAC','HECTOR',600,108,708,28.32,250,30,0,0,0,400,200,'SI','SI','E001-366'],
+[28,'2026-01-24',1,4,'ALGOSEMIC SAC','HECTOR',500,90,590,23.6,250,30,0,0,0,400,100,'SI','SI','E001-368'],
+[29,'2026-01-26',1,5,'ALGOSEMIC SAC','HECTOR',500,90,590,23.6,250,30,0,0,0,400,100,'SI','SI','E001-369'],
+[30,'2026-01-27',1,5,'YMATEX S.A.C.','WILDER',750,135,885,35.4,51.14,20,0,0,0,171.14,578.86,'SI','SI','E001-370'],
+[32,'2026-01-28',1,5,'YMATEX S.A.C.','LEONCIO',900,162,1062,42.480000000000004,140,20,0,40,0,300,600,'SI','SI','E001-372'],
+[33,'2026-01-28',1,5,'YMATEX S.A.C.','WILDER',900,162,1062,42.480000000000004,51.14,10,0,80,0,241.14,658.86,'SI','SI','E001-372'],
+[34,'2026-01-28',1,5,'TEJIDOS JORGITO SAC','WILDER',450,81,531,21.240000000000002,51.14,10,0,0,0,161.14,288.86,'SI','SI','E001-393'],
+[35,'2026-01-29',1,5,'TEJIDOS JORGITO SAC','LEONCIO',550,99,649,25.96,100,20,0,0,0,220,330,'SI','SI','E001-393'],
+[37,'2026-01-29',1,5,'TEJIDOS JORGITO SAC','WILDER',550,99,649,25.96,51.14,20,0,0,15,186.14,363.86,'SI','SI','E001-393'],
+[38,'2026-01-29',1,5,'TEJIDOS JORGITO SAC','GIAN',550,99,649,25.96,250,30,0,0,0,400,150,'SI','SI','E001-393'],
+[39,'2026-01-30',1,5,'ALGOSEMIC SAC','HECTOR',500,90,590,23.6,250,30,0,0,0,400,100,'SI','SI','E001-373'],
+[41,'2026-02-02',2,6,'INDUSTRIA TEXTIL AMAZONAS S.A.C.','HECTOR',850,153,1003,40.12,250,30,0,0,0,400,450,'SI','SI','E001-374'],
+[42,'2026-02-03',2,6,'TEJIDOS JORGITO SAC','LEONCIO',550,99,649,25.96,100,20,0,0,0,220,330,'SI','SI','E001-393'],
+[43,'2026-02-03',2,6,'YMATEX S.A.C.','WILDER',750,135,885,35.4,51.14,10,0,0,0,161.14,588.86,'SI','SI','E001-375'],
+[44,'2026-02-03',2,6,'ALGOSEMIC SAC','WILDER',500,90,590,23.6,51.14,10,0,0,0,161.14,338.86,'SI','SI','E001-376'],
+[45,'2026-02-04',2,6,'COMERCIAL FRANLIZ SAC','HECTOR',600,108,708,28.32,250,30,0,0,0,400,200,'SI','SI','E001-377'],
+[46,'2026-02-05',2,6,'YMATEX S.A.C.','LEONCIO',550,99,649,25.96,100,20,0,0,0,220,330,'SI','SI','E001-378'],
+[47,'2026-02-05',2,6,'YMATEX S.A.C.','HECTOR',550,99,649,25.96,250,30,0,0,0,400,150,'SI','SI','E001-378'],
+[48,'2026-02-06',2,6,'YMATEX S.A.C.','LEONCIO',550,99,649,25.96,100,20,0,0,0,220,330,'SI','SI','E001-379'],
+[49,'2026-02-06',2,6,'ALGOSEMIC SAC','HECTOR',500,90,590,23.6,250,30,0,0,0,400,100,'SI','SI','E001-380'],
+[50,'2026-02-09',2,7,'TEJIDOS SAN JACINTO S.A.','LEONCIO',700,126,826,33.04,130,20,0,0,0,250,450,'SI','SI','E001-381'],
+[51,'2026-02-09',2,7,'TEJIDOS JORGITO SAC','LEONCIO',550,99,649,25.96,100,20,0,0,0,220,330,'SI','SI','E001-393'],
+[52,'2026-02-10',2,7,'TEJIDOS SAN JACINTO S.A.','WILDER',700,126,826,33.04,86.9,20,0,0,0,206.9,493.1,'SI','SI','E001-381'],
+[53,'2026-02-10',2,7,'TEJIDOS JORGITO SAC','LEONCIO',550,99,649,25.96,100,20,0,0,0,220,330,'SI','SI','E001-393'],
+[54,'2026-02-10',2,7,'TEJIDOS JORGITO SAC','EDGARDO',550,99,649,25.96,250,30,0,0,0,400,150,'SI','SI','E001-393'],
+[55,'2026-02-11',2,7,'TEJIDOS SAN JACINTO S.A.','WILDER',700,126,826,33.04,86.9,10,0,0,0,196.9,503.1,'SI','SI','E001-381'],
+[56,'2026-02-11',2,7,'TEJIDOS SAN JACINTO S.A.','WILDER',700,126,826,33.04,86.9,10,0,0,0,196.9,503.1,'SI','SI','E001-381'],
+[57,'2026-02-12',2,7,'TEJIDOS JORGITO SAC','LEONCIO',550,99,649,25.96,100,30,0,0,0,230,320,'SI','SI','E001-393'],
+[58,'2026-02-12',2,7,'TEJIDOS SAN JACINTO S.A.','WILDER',700,126,826,33.04,86.9,10,0,0,0,196.9,503.1,'SI','SI','E001-381'],
+[59,'2026-02-12',2,7,'TEJIDOS SAN JACINTO S.A.','WILDER',700,126,826,33.04,88.5,10,0,0,0,198.5,501.5,'SI','SI','E001-382'],
+[60,'2026-02-13',2,7,'TEJIDOS SAN JACINTO S.A.','WILDER',700,126,826,33.04,88.5,10,0,0,0,198.5,501.5,'SI','SI','E001-383'],
+[61,'2026-02-13',2,7,'TEJIDOS SAN JACINTO S.A.','WILDER',700,126,826,33.04,88.5,10,0,0,0,198.5,501.5,'SI','SI','E001-383'],
+[62,'2026-02-16',2,8,'TEJIDOS SAN JACINTO S.A.','LEONCIO',700,126,826,33.04,125,15,0,0,0,240,460,'SI','SI','E001-384'],
+[63,'2026-02-16',2,8,'TEJIDOS JORGITO SAC','HECTOR',550,99,649,25.96,250,30,0,0,0,400,150,'SI','SI','E001-393'],
+[64,'2026-02-16',2,8,'TEJIDOS SAN JACINTO S.A.','LEONCIO',700,126,826,33.04,125,15,0,0,0,240,460,'SI','SI','E001-384'],
+[65,'2026-02-17',2,8,'YMATEX S.A.C.','HECTOR',750,135,885,35.4,250,30,0,0,0,400,350,'SI','SI','E001-385'],
+[66,'2026-02-18',2,8,'TEJIDOS SAN JACINTO S.A.','LEONCIO',700,126,826,33.04,125,15,0,0,0,240,460,'SI','SI','E001-391'],
+[67,'2026-02-18',2,8,'TEJIDOS SAN JACINTO S.A.','HECTOR',350,63,413,16.52,250,30,0,0,0,400,-50,'SI','SI','E001-389'],
+[68,'2026-02-18',2,8,'YMATEX S.A.C.','EDGARDO',750,135,885,35.4,250,30,0,0,0,400,350,'SI','SI','E001-386'],
+[69,'2026-02-18',2,8,'TEJIDOS SAN JACINTO S.A.','HECTOR',350,63,413,16.52,250,30,0,0,0,400,-50,'SI','SI','E001-389'],
+[70,'2026-02-18',2,8,'TEJIDOS SAN JACINTO S.A.','HECTOR',350,63,413,16.52,250,30,0,0,0,400,-50,'SI','SI','E001-389'],
+[71,'2026-02-18',2,8,'TEJIDOS SAN JACINTO S.A.','HECTOR',350,63,413,16.52,250,30,0,0,0,400,-50,'SI','SI','E001-389'],
+[72,'2026-02-18',2,8,'TEJIDOS SAN JACINTO S.A.','LEONCIO',700,126,826,33.04,125,15,0,0,0,240,460,'SI','SI','E001-391'],
+[73,'2026-02-18',2,8,'TEJIDOS JORGITO SAC','LEONCIO',550,99,649,25.96,100,30,0,0,0,230,320,'SI','SI','E001-393'],
+[74,'2026-02-19',2,8,'TEJIDOS SAN JACINTO S.A.','LEONCIO',700,126,826,33.04,120,30,0,0,0,250,450,'SI','SI','E001-391'],
+[75,'2026-02-19',2,8,'YMATEX S.A.C.','JHON RIVERA',850,153,1003,40.12,250,30,0,0,0,400,450,'SI','SI','E001-387'],
+[76,'2026-02-19',2,8,'FILASUR S.A.','WILDER',650,117,767,30.68,88.5,20,0,0,0,208.5,441.5,'SI','SI','E001-388'],
+[77,'2026-02-20',2,8,'TEJIDOS SAN JACINTO S.A.','LEONCIO',700,126,826,33.04,120,15,0,0,0,235,465,'SI','SI','E001-391'],
+[78,'2026-02-20',2,8,'TEJIDOS JORGITO SAC','EDGARDO',550,99,649,25.96,250,30,0,0,0,400,150,'SI','SI','E001-393'],
+[79,'2026-02-20',2,8,'TEJIDOS JORGITO SAC','LEONCIO',550,99,649,25.96,100,15,0,0,0,215,335,'SI','SI','E001-393'],
+[80,'2026-02-20',2,8,'COMERCIAL FRANLIZ SAC','WILDER',600,108,708,28.32,88.5,20,0,0,0,208.5,391.5,'SI','SI','E001-390'],
+[81,'2026-02-21',2,8,'YMATEX S.A.C.','LEONCIO',750,135,885,35.4,100,30,0,0,0,230,520,'SI','SI','E001-392'],
+[82,'2026-02-23',2,9,'YMATEX S.A.C.','HECTOR',900,162,1062,42.480000000000004,250,30,0,0,0,400,500,'SI','SI','E001-394'],
+[83,'2026-02-23',2,9,'TEJIDOS SAN JACINTO S.A.','LEONCIO',700,126,826,33.04,120,30,0,0,0,250,450,'SI','SI','E001-396'],
+[84,'2026-02-23',2,9,'YMATEX S.A.C.','HECTOR',750,135,885,35.4,250,30,0,0,0,400,350,'SI','SI','E001-395'],
+[85,'2026-02-24',2,9,'TEJIDOS JORGITO SAC','LEONCIO',450,81,531,21.240000000000002,100,15,0,0,0,215,235,'SI','SI','E001-413'],
+[86,'2026-02-24',2,9,'TEJIDOS JORGITO SAC','LEONCIO',450,81,531,21.240000000000002,100,15,0,0,0,215,235,'SI','SI','E001-413'],
+[87,'2026-02-25',2,9,'TEJIDOS JORGITO SAC','LEONCIO',450,81,531,21.240000000000002,100,30,0,0,0,230,220,'SI','SI','E001-413'],
+[88,'2026-02-26',2,9,'TEJIDOS JORGITO SAC','LEONCIO',550,99,649,25.96,100,30,0,0,0,230,320,'SI','SI','E001-413'],
+[89,'2026-02-26',2,9,'TEJIDOS JORGITO SAC','EDGARDO',550,99,649,25.96,250,30,0,0,0,400,150,'SI','SI','E001-413'],
+[90,'2026-02-26',2,9,'YMATEX S.A.C.','WILDER',750,135,885,35.4,88.5,20,0,0,0,208.5,541.5,'SI','SI','E001-397'],
+[91,'2026-02-27',2,9,'TEJIDOS JORGITO SAC','LEONCIO',550,99,649,25.96,100,30,0,0,0,230,320,'SI','SI','E001-413'],
+[92,'2026-02-28',2,9,'TEJIDOS JORGITO SAC','LEONCIO',450,81,531,21.240000000000002,100,30,0,0,0,230,220,'SI','SI','E001-413'],
+[93,'2026-03-06',3,10,'YMATEX S.A.C.','LEONCIO',750,135,885,35.4,100,30,0,0,7.894,237.894,512.106,'SI','SI','E001-399'],
+[94,'2026-03-06',3,10,'COMERCIAL FRANLIZ SAC','HECTOR',600,108,708,28.32,250,30,0,0,0,400,200,'SI','SI','E001-398'],
+[95,'2026-03-07',3,10,'YMATEX S.A.C.','JHON RIVERA',900,162,1062,42.480000000000004,250,30,0,0,0,400,500,'SI','SI','E001-400'],
+[96,'2026-03-07',3,10,'YMATEX S.A.C.','LEONCIO',750,135,885,35.4,120,30,0,0,7.894,257.894,492.106,'SI','SI','E001-401'],
+[97,'2026-03-07',3,10,'TEJIDOS JORGITO SAC','EDGARDO',450,81,531,21.240000000000002,250,30,0,0,0,400,50,'SI','SI','E001-403'],
+[98,'2026-03-07',3,10,'TEJIDOS JORGITO SAC','HERNAN ASTUPARIA',450,81,531,21.240000000000002,250,30,0,0,0,400,50,'SI','SI','E001-403'],
+[99,'2026-03-08',3,10,'TEJIDOS JORGITO SAC','HECTOR',450,81,531,21.240000000000002,250,30,0,0,0,400,50,'SI','SI','E001-403'],
+[100,'2026-03-09',3,11,'YMATEX S.A.C.','LEONCIO',750,135,885,35.4,120,30,0,0,7.894,257.894,492.106,'SI','SI','E001-402'],
+[101,'2026-03-09',3,11,'YMATEX S.A.C.','JHON RIVERA',1050,189,1239,49.56,250,30,0,0,0,400,650,'SI','SI','E001-404'],
+[102,'2026-03-09',3,11,'YMATEX S.A.C.','GERLIS RIVERA',1050,189,1239,49.56,250,30,0,0,0,400,650,'SI','SI','E001-404'],
+[104,'2026-03-10',3,11,'ENTRACAR SIERRA SAC','GIAN',900,162,1062,42.480000000000004,250,30,0,0,0,400,500,'SI','SI','E001-405'],
+[105,'2026-03-11',3,11,'TEJIDOS SAN JACINTO S.A.','LEONCIO',700,126,826,33.04,150,15,0,0,7.894,272.894,427.106,'SI','SI','E001-406'],
+[106,'2026-03-11',3,11,'TEJIDOS SAN JACINTO S.A.','LEONCIO',700,126,826,33.04,150,15,0,0,7.894,272.894,427.106,'SI','SI','E001-406'],
+[107,'2026-03-13',3,11,'TEJIDOS SAN JACINTO S.A.','LEONCIO',700,126,826,33.04,150,15,0,0,7.894,272.894,427.106,'SI','SI','E001-407'],
+[108,'2026-03-13',3,11,'TEJIDOS SAN JACINTO S.A.','LEONCIO',700,126,826,33.04,150,15,0,0,7.894,272.894,427.106,'SI','SI','E001-407'],
+[109,'2026-03-13',3,11,'COMERCIAL FRANLIZ SAC','HECTOR',500,90,590,23.6,250,30,0,0,0,400,100,'SI','SI','E001-409'],
+[110,'2026-03-13',3,11,'TEJIDOS SAN JACINTO S.A.','LEONCIO',700,126,826,33.04,100,0,0,0,7.894,207.894,492.106,'SI','SI','E001-407'],
+[111,'2026-03-14',3,11,'INDUSTRIA TEXTIL AMAZONAS S.A.C.','HECTOR',850,153,1003,40.12,250,30,0,0,0,400,450,'SI','SI','E001-408'],
+[112,'2026-03-16',3,12,'TEJIDOS JORGITO SAC','LEONCIO',550,99,649,25.96,120,30,0,0,7.894,257.894,292.106,'SI','SI','E001-413'],
+[113,'2026-03-17',3,12,'TEJIDOS JORGITO SAC','LEONCIO',550,99,649,25.96,110,15,0,0,7.894,232.894,317.106,'SI','SI','E001-413'],
+[114,'2026-03-17',3,12,'YMATEX S.A.C.','WILDER',900,162,1062,42.480000000000004,97.75,20,0,0,0,217.75,682.25,'SI','SI','E001-410'],
+[116,'2026-03-17',3,12,'TEJIDOS JORGITO SAC','LEONCIO',550,99,649,25.96,110,15,0,0,7.894,232.894,317.106,'SI','SI','E001-413'],
+[117,'2026-03-18',3,12,'YMATEX S.A.C.','GERLIS RIVERA',800,144,944,37.76,250,30,0,0,0,400,400,'SI','SI','E001-411'],
+[118,'2026-03-19',3,12,'TEJIDOS JORGITO SAC','LEONCIO',550,99,649,25.96,120,30,0,0,7.894,257.894,292.106,'SI','SI','E001-413'],
+[119,'2026-03-19',3,12,'TEJIDOS JORGITO SAC','JHON RIVERA',550,99,649,25.96,250,30,0,0,0,400,150,'SI','SI','E001-413'],
+[120,'2026-03-19',3,12,'YMATEX S.A.C.','WILDER',750,135,885,35.4,97.75,20,0,0,0,217.75,532.25,'SI','SI','E001-412'],
+[121,'2026-03-20',3,12,'TEJIDOS JORGITO SAC','LEONCIO',550,99,649,25.96,120,30,0,0,7.894,257.894,292.106,'SI','SI','E001-413'],
+[122,'2026-03-20',3,12,'TEJIDOS JORGITO SAC','WILDER',550,99,649,25.96,97.75,30,0,0,0,227.75,322.25,'SI','SI','E001-413'],
+[123,'2026-03-24',3,13,'YMATEX S.A.C.','HECTOR',750,135,885,35.4,250,30,0,0,0,400,350,'SI','SI','E001-414'],
+[124,'2026-03-24',3,13,'TEJIDOS JORGITO SAC','LEONCIO',500,90,590,23.6,120,30,0,0,7.894,257.894,242.106,'SI','SI','E001-424'],
+[125,'2026-03-25',3,13,'TEJIDOS JORGITO SAC','LEONCIO',850,153,1003,40.12,120,30,0,0,7.894,257.894,592.106,'SI','SI','E001-424'],
+[126,'2026-03-25',3,13,'COMERCIAL FRANLIZ SAC','HECTOR',700,126,826,33.04,250,30,0,0,0,400,300,'SI','SI','E001-415'],
+[128,'2026-03-25',3,13,'TEJIDOS JORGITO SAC','EDGARDO',850,153,1003,40.12,250,30,0,0,0,400,450,'SI','SI','E001-424'],
+[129,'2026-03-26',3,13,'YMATEX S.A.C.','HECTOR',900,162,1062,42.480000000000004,250,30,0,0,0,400,500,'SI','SI','E001-416'],
+[130,'2026-03-26',3,13,'TEJIDOS JORGITO SAC','LEONCIO',500,90,590,23.6,100,30,0,0,7.894,237.894,262.106,'SI','SI','E001-424'],
+[131,'2026-03-27',3,13,'TEJIDOS JORGITO SAC','LEONCIO',500,90,590,23.6,120,30,0,0,7.894,257.894,242.106,'SI','SI','E001-424'],
+[132,'2026-03-27',3,13,'INDUSTRIA TEXTIL AMAZONAS S.A.C.','HECTOR',800,144,944,37.76,250,30,0,0,0,400,400,'SI','SI','E001-417'],
+[133,'2026-03-27',3,13,'INDUSTRIA TEXTIL AMAZONAS S.A.C.','JHON RIVERA',800,144,944,37.76,250,30,0,0,0,400,400,'SI','SI','E001-417'],
+[134,'2026-03-28',3,13,'TEJIDOS JORGITO SAC','LEONCIO',600,108,708,28.32,120,30,0,0,7.894,257.894,342.106,'SI','SI','E001-424'],
+[135,'2026-03-28',3,13,'ENTRACAR SIERRA SAC','HECTOR',1100,198,1298,51.92,250,30,0,0,0,400,700,'SI','SI','E001-418'],
+[136,'2026-03-30',3,14,'TEJIDOS JORGITO SAC','LEONCIO',600,108,708,28.32,120,30,0,0,7.894,257.894,342.106,'SI','SI','E001-424'],
+[137,'2026-03-30',3,14,'TEJIDOS JORGITO SAC','JHON RIVERA',600,108,708,28.32,250,30,0,0,0,400,200,'SI','SI','E001-424'],
+[138,'2026-03-31',3,14,'REYNA HUAMAN MICHAEL','HECTOR',700,126,826,33.04,250,30,0,0,0,400,300,'SI','SI','E001-419'],
+[139,'2026-03-31',3,14,'ENTRACAR SIERRA SAC','CARLOS CHAVEZ',900,162,1062,42.480000000000004,250,30,0,0,0,400,500,'SI','SI','E001-420'],
+[140,'2026-04-01',4,14,'TEJIDOS JORGITO SAC','LEONCIO',500,90,590,23.6,120,30,0,0,10.71,260.71,239.29000000000002,'SI','SI','E001-424'],
+[141,'2026-04-04',4,14,'TEJIDOS JORGITO SAC','WILDER',500,90,590,23.6,70.23,30,0,0,0,220.23000000000002,279.77,'SI','SI','E001-424'],
+[142,'2026-04-04',4,14,'TEJIDOS JORGITO SAC','HECTOR',500,90,590,23.6,250,30,0,0,0,400,100,'SI','SI','E001-424'],
+[143,'2026-04-06',4,15,'TEJIDOS JORGITO SAC','WILDER',600,108,708,28.32,70.23,30,0,0,0,243.98000000000002,356.02,'SI','SI','E001-424'],
+[144,'2026-04-06',4,15,'TEJIDOS JORGITO SAC','LEONCIO',600,108,708,28.32,120,30,0,0,10.71,260.71,339.29,'SI','SI','E001-424'],
+[145,'2026-04-07',4,15,'TEJIDOS JORGITO SAC','LEONCIO',850,153,1003,40.12,210,30,0,0,10.71,350.71,499.29,'SI','SI','E001-424'],
+[146,'2026-04-07',4,15,'TEJIDOS JORGITO SAC','HECTOR',600,108,708,28.32,250,30,0,0,0,400,200,'SI','SI','E001-424'],
+[147,'2026-04-07',4,15,'TEJIDOS JORGITO SAC','WILDER',850,153,1003,40.12,70.23,30,0,0,0,243.98000000000002,606.02,'SI','SI','E001-424'],
+[148,'2026-04-07',4,15,'TEJIDOS JORGITO SAC','HECTOR',600,108,708,28.32,250,30,0,0,0,400,200,'SI','SI','E001-424'],
+[149,'2026-04-08',4,15,'TEJIDOS JORGITO SAC','LEONCIO',550,99,649,25.96,110,15,0,0,10.71,235.71,314.28999999999996,'SI','SI','E001-424'],
+[150,'2026-04-08',4,15,'TEJIDOS JORGITO SAC','HECTOR',550,99,649,25.96,250,30,0,0,0,400,150,'SI','SI','E001-424'],
+[151,'2026-04-08',4,15,'TEJIDOS JORGITO SAC','HECTOR',700,126,826,33.04,250,30,0,0,0,400,300,'SI','SI','E001-424'],
+[152,'2026-04-08',4,15,'TEJIDOS JORGITO SAC','LEONCIO',700,126,826,33.04,110,15,0,0,10.71,235.71,464.28999999999996,'SI','SI','E001-424'],
+[153,'2026-04-10',4,15,'TEJIDOS JORGITO SAC','LEONCIO',550,99,649,25.96,110,15,0,0,10.71,235.71,314.28999999999996,'SI','SI','E001-424'],
+[154,'2026-04-10',4,15,'TEJIDOS JORGITO SAC','WILDER',550,99,649,25.96,70.23,15,0,0,0,228.98000000000002,321.02,'SI','SI','E001-424'],
+[155,'2026-04-10',4,15,'TEJIDOS JORGITO SAC','WILDER',700,126,826,33.04,70.23,15,0,0,0,228.98000000000002,471.02,'SI','SI','E001-424'],
+[156,'2026-04-10',4,15,'TEJIDOS JORGITO SAC','LEONCIO',700,126,826,33.04,110,15,0,0,10.71,235.71,464.28999999999996,'SI','SI','E001-424'],
+[157,'2026-04-10',4,15,'COMERCIAL FRANLIZ SAC','HECTOR',700,126,826,33.04,250,30,0,0,0,400,300,'SI','SI','E001-421'],
+[158,'2026-04-13',4,16,'ENTRACAR SIERRA SAC','HECTOR',800,144,944,37.76,250,30,0,0,0,400,400,'SI','SI','E001-423'],
+[159,'2026-04-14',4,16,'TEJIDOS JORGITO SAC','WILDER',600,108,708,28.32,81.475,15,0,0,0,246.475,353.525,'SI','SI','E001-427'],
+[160,'2026-04-14',4,16,'TEJIDOS JORGITO SAC','LEONCIO',600,108,708,28.32,120,30,0,0,10.71,260.71,339.29,'SI','SI','E001-427'],
+[161,'2026-04-14',4,16,'TEJIDOS JORGITO SAC','WILDER',500,90,590,23.6,81.475,15,0,0,0,246.475,253.525,'SI','SI','E001-427'],
+[162,'2026-04-14',4,16,'ENTRACAR SIERRA SAC','HECTOR',800,144,944,37.76,250,30,0,0,0,400,400,'SI','SI','E001-423'],
+[163,'2026-04-15',4,16,'TEJIDOS JORGITO SAC','LEONCIO',650,117,767,30.68,220,30,0,0,10.71,360.71,289.29,'SI','SI','E001-427'],
+[164,'2026-04-15',4,16,'TEJIDOS JORGITO SAC','WILDER',700,126,826,33.04,81.475,30,0,0,0,261.475,438.525,'SI','SI','E001-427'],
+[165,'2026-04-16',4,16,'TEJIDOS JORGITO SAC','LEONCIO',600,108,708,28.32,120,30,0,0,10.71,260.71,339.29,'SI','SI','E001-427'],
+[166,'2026-04-16',4,16,'YMATEX S.A.C.','HECTOR',1150,207,1357,54.28,250,30,0,0,0,261.475,750,'SI','SI','E001-426'],
+[167,'2026-04-16',4,16,'YMATEX S.A.C.','WILDER',750,135,885,35.4,81.475,30,0,0,0,261.475,488.525,'SI','SI','E001-425'],
+[168,'2026-04-16',4,16,'TEJIDOS JORGITO SAC','CARLOS CHAVEZ',700,126,826,33.04,250,30,0,0,0,400,300,'SI','SI','E001-427'],
+[169,'2026-04-17',4,16,'TEJIDOS JORGITO SAC','WILDER',600,108,708,28.32,81.475,30,0,0,0,261.475,338.525,'SI','SI','E001-427'],
+[170,'2026-04-17',4,16,'TEJIDOS JORGITO SAC','HECTOR',600,108,708,28.32,250,30,0,0,0,400,200,'SI','SI','E001-427'],
+[171,'2026-04-17',4,16,'TEJIDOS JORGITO SAC','CARLOS CHAVEZ',700,126,826,33.04,250,30,0,0,0,261.475,438.525,'SI','SI','E001-427'],
+[172,'2026-04-22',4,17,'TEJIDOS JORGITO SAC','WILDER',800,144,944,37.76,78.482,30,0,0,0,483.48199999999997,316.51800000000003,'SI','NO','E001-439'],
+[173,'2026-04-22',4,17,'MICHAEL REYNA HUAMAN','HECTOR',700,126,826,33.04,250,30,0,0,0,400,300,'SI','SI','E001-428'],
+[174,'2026-04-23',4,17,'TEJIDOS JORGITO SAC','LEONCIO',600,108,708,28.32,120,30,0,0,10.71,260.71,339.29,'NO','NO','E001-434'],
+[175,'2026-04-23',4,17,'TEJIDOS JORGITO SAC','WILDER',600,108,708,28.32,78.482,30,0,0,0,483.48199999999997,116.51800000000003,'NO','NO','E001-434'],
+[176,'2026-04-24',4,17,'COMERCIAL FRANLIZ SAC','HECTOR',700,126,826,33.04,250,30,0,0,0,400,300,'SI','SI','E001-429'],
+[177,'2026-04-27',4,18,'TEJIDOS JORGITO SAC','WILDER',600,108,708,28.32,78.482,30,0,0,0,258.48199999999997,341.51800000000003,'NO','NO','E001-434'],
+[178,'2026-04-28',4,18,'TEJIDOS SAN JACINTO S.A.','WILDER',600,108,708,28.32,78.482,15,0,0,0,243.482,356.51800000000003,'SI','SI','E001-432'],
+[179,'2026-04-28',4,18,'ENTRACAR SIERRA SAC','HECTOR',800,144,944,37.76,250,30,0,0,0,400,400,'SI','SI','E001-430'],
+[180,'2026-04-28',4,18,'TEJIDOS JORGITO SAC','LEONCIO',500,90,590,23.6,120,30,0,0,10.71,260.71,239.29000000000002,'NO','NO','E001-434'],
+[181,'2026-04-28',4,18,'TEJIDOS SAN JACINTO S.A.','WILDER',600,108,708,28.32,78.482,15,0,0,0,243.482,356.51800000000003,'SI','SI','E001-432'],
+[182,'2026-04-29',4,18,'TEJIDOS JORGITO SAC','LEONCIO',600,108,708,28.32,120,30,0,0,10.71,260.71,339.29,'NO','NO','E001-434'],
+[183,'2026-04-29',4,18,'TEJIDOS JORGITO SAC','WILDER',600,108,708,28.32,94.6425,15,0,0,0,259.6425,340.3575,'NO','NO','E001-434'],
+[184,'2026-04-29',4,18,'TEJIDOS JORGITO SAC','WILDER',500,90,590,23.6,94.6425,15,0,0,0,259.6425,240.35750000000002,'NO','NO','E001-434'],
+[185,'2026-04-30',4,18,'TEJIDOS JORGITO SAC','LEONCIO',600,108,708,28.32,120,30,0,0,10.71,260.71,339.29,'NO','NO','E001-434'],
+[186,'2026-04-30',4,18,'CARLOS CHAVEZ','HECTOR',900,162,1062,42.480000000000004,250,30,0,0,0,400,500,'SI','SI','E001-431'],
+[187,'2026-05-02',5,18,'TEJIDOS JORGITO SAC','LEONCIO',600,108,708,28.32,120,30,0,0,0,250,350,'NO','NO','E001-434'],
+[188,'2026-05-05',5,19,'TEJIDOS JORGITO SAC','LEONCIO',500,90,590,23.6,120,30,0,0,0,250,250,'NO','NO','E001-434'],
+[189,'2026-05-05',5,19,'INDUSTRIA TEXTIL AMAZONAS S.A.C.','HECTOR',850,153,1003,40.12,250,30,0,0,0,400,450,'SI','SI','E001-433'],
+[190,'2026-05-06',5,19,'INDUSTRIA TEXTIL AMAZONAS S.A.C.','HECTOR',850,153,1003,40.12,250,30,0,0,0,400,450,'SI','SI','E001-435'],
+[191,'2026-05-07',5,19,'TEJIDOS JORGITO SAC','LEONCIO',800,144,944,37.76,240,30,0,0,0,370,430,'NO','NO','E001-437'],
+[192,'2026-05-07',5,19,'TEJIDOS JORGITO SAC','WILDER',800,144,944,37.76,112.45,30,0,0,0,329.95,470.05,'NO','NO','E001-437'],
+[193,'2026-05-08',5,19,'TEJIDOS JORGITO SAC','LEONCIO',600,108,708,28.32,120,15,0,0,0,235,365,'NO','NO','E001-437'],
+[194,'2026-05-08',5,19,'TEJIDOS JORGITO SAC','HECTOR',600,108,708,28.32,250,30,0,0,0,400,200,'NO','NO','E001-437'],
+[195,'2026-05-08',5,19,'TEJIDOS JORGITO SAC','WILDER',550,99,649,25.96,112.45,30,0,0,0,329.95,220.05,'NO','NO','E001-437'],
+[196,'2026-05-08',5,19,'TEJIDOS JORGITO SAC','LEONCIO',600,108,708,28.32,120,15,0,0,0,235,365,'NO','NO','E001-437'],
+[197,'2026-05-09',5,19,'TEJIDOS JORGITO SAC','LEONCIO',600,108,708,28.32,120,30,0,0,0,250,350,'NO','NO','E001-437'],
+[198,'2026-05-12',5,20,'TEJIDOS JORGITO SAC','WILDER',550,99,649,25.96,112.45,60,0,0,0,359.95,190.05,'NO','NO','E001-437'],
+[199,'2026-05-12',5,20,'TEJIDOS JORGITO SAC','LEONCIO',600,108,708,28.32,120,30,0,0,0,250,350,'NO','NO','E001-437'],
+[200,'2026-05-12',5,20,'TEJIDOS JORGITO SAC','HECTOR',600,108,708,28.32,250,30,0,0,0,400,200,'NO','NO','E001-437'],
+[201,'2026-05-13',5,20,'TEJIDOS JORGITO SAC','LEONCIO',600,108,708,28.32,120,30,0,0,0,250,350,'NO','NO','E001-437'],
+[202,'2026-05-13',5,20,'TEJIDOS JORGITO SAC','WILDER',550,99,649,25.96,69.57,30,0,0,0,287.07,262.93,'NO','NO','E001-437'],
+[203,'2026-05-14',5,20,'TEJIDOS JORGITO SAC','LEONCIO',600,108,708,28.32,120,15,0,20,0,255,345,'NO','NO','E001-437'],
+[204,'2026-05-14',5,20,'TEJIDOS JORGITO SAC','WILDER',600,108,708,28.32,69.57,30,0,0,0,287.07,312.93,'NO','NO','E001-437'],
+[205,'2026-05-14',5,20,'INDUSTRIA TEXTIL AMAZONAS S.A.C.','HECTOR',800,144,944,37.76,250,30,0,0,0,400,400,'SI','SI','E001-436'],
+[206,'2026-05-14',5,20,'TEJIDOS JORGITO SAC','LEONCIO',500,90,590,23.6,120,15,0,0,0,235,265,'NO','NO','E001-437'],
+[207,'2026-05-15',5,20,'TEJIDOS JORGITO SAC','LEONCIO',600,108,708,28.32,120,30,0,0,0,250,350,'NO','NO','E001-437'],
+[208,'2026-05-15',5,20,'TEJIDOS JORGITO SAC','WILDER',600,108,708,28.32,69.57,30,0,0,0,287.07,312.93,'NO','NO','E001-437'],
+[209,'2026-05-16',5,20,'TEJIDOS JORGITO SAC','HECTOR',600,108,708,28.32,250,30,0,0,0,400,200,'NO','NO','E001-439'],
+[210,'2026-05-18',5,21,'TEJIDOS JORGITO SAC','WILDER',600,108,708,28.32,69.57,30,0,0,0,249.57,350.43,'NO','NO','E001-439'],
+[211,'2026-05-19',5,21,'TEJIDOS JORGITO SAC','LEONCIO',500,90,590,23.6,120,30,0,0,0,250,250,'NO','NO','E001-439'],
+[212,'2026-05-20',5,21,'TEJIDOS JORGITO SAC','LEONCIO',600,108,708,28.32,120,30,0,0,0,250,350,'NO','NO','E001-439'],
+[213,'2026-05-20',5,21,'TEJIDOS JORGITO SAC','WILDER',550,99,649,25.96,69.184,30,0,0,0,249.184,300.81600000000003,'NO','NO','E001-439'],
+[214,'2026-05-20',5,21,'YMATEX S.A.C.','HECTOR',600,108,708,28.32,250,30,0,0,0,400,200,'SI','SI','E001-438'],
+[215,'2026-05-21',5,21,'TEJIDOS JORGITO SAC','WILDER',550,99,649,25.96,69.184,30,0,0,0,249.184,300.81600000000003,'NO','NO','E001-439'],
+[216,'2026-05-22',5,21,'TEJIDOS JORGITO SAC','WILDER',550,99,649,25.96,69.184,30,0,0,0,249.184,300.81600000000003,'NO','NO','E001-439'],
+[217,'2026-05-22',5,21,'TEJIDOS JORGITO SAC','LEONCIO',500,90,590,23.6,120,30,0,25,0,275,225,'NO','NO','E001-439'],
+[218,'2026-05-22',5,21,'TEJIDOS JORGITO SAC','LEONCIO',600,108,708,28.32,0,30,0,0,0,130,470,'NO','NO','E001-439'],
+[219,'2026-05-23',5,21,'TEJIDOS JORGITO SAC','WILDER',550,99,649,25.96,69.184,30,0,0,0,249.184,300.81600000000003,'NO','NO','E001-439'],
+[220,'2026-05-25',5,22,'TEJIDOS JORGITO SAC','WILDER',550,99,649,25.96,69.184,30,0,0,0,249.184,300.81600000000003,'NO','NO','E001-439'],
+[221,'2026-05-25',5,22,'TEJIDOS JORGITO SAC','LEONCIO',600,108,708,28.32,120,30,0,0,0,250,350,'NO','NO','E001-439'],
+[222,'2026-05-25',5,22,'TEJIDOS JORGITO SAC','HECTOR',550,99,649,25.96,250,30,0,0,0,400,150,'NO','NO','E001-439'],
+[223,'2026-05-26',5,22,'TEJIDOS JORGITO SAC','LEONCIO',700,126,826,33.04,180,30,0,0,0,310,390,'NO','NO',''],
+[224,'2026-05-26',5,22,'TEJIDOS JORGITO SAC','WILDER',700,126,826,33.04,0,30,0,60,0,240,460,'NO','NO',''],
+[225,'2026-05-27',5,22,'TEJIDOS JORGITO SAC','LEONCIO',600,108,708,28.32,120,15,0,0,0,235,365,'NO','NO',''],
+[226,'2026-05-27',5,22,'TEJIDOS JORGITO SAC','WILDER',600,108,708,28.32,0,30,0,0,0,180,420,'NO','NO',''],
+[227,'2026-05-27',5,22,'TEJIDOS JORGITO SAC','LEONCIO',500,90,590,23.6,120,15,0,0,0,235,265,'NO','NO',''],
+[228,'2026-05-28',5,22,'TEJIDOS JORGITO SAC','WILDER',550,99,649,25.96,0,30,0,0,0,180,370,'NO','NO',''],
+[229,'2026-05-28',5,22,'TEJIDOS JORGITO SAC','LEONCIO',600,108,708,28.32,110,15,0,0,0,225,375,'NO','NO',''],
+[230,'2026-05-28',5,22,'TEJIDOS JORGITO SAC','LEONCIO',500,90,590,23.6,110,15,0,0,0,225,275,'NO','NO',''],
+[231,'2026-05-29',5,22,'TEJIDOS JORGITO SAC','HECTOR',550,99,649,25.96,250,30,0,0,0,400,150,'NO','NO',''],
+[232,'2026-05-29',5,22,'TEJIDOS JORGITO SAC','WILDER',550,99,649,25.96,0,30,0,0,0,180,370,'NO','NO',''],
+[233,'2026-05-29',5,22,'TEJIDOS JORGITO SAC','LEONCIO',550,99,649,25.96,120,30,0,0,0,250,300,'NO','NO',''],
+[234,'2026-05-29',5,22,'TEJIDOS JORGITO SAC','HECTOR',600,108,108,108,250,30,0,0,0,400,200,'NO','NO',''],
+[235,'2026-05-30',5,22,'TEJIDOS JORGITO SAC','LEONCIO',550,99,99,99,120,30,0,20,0,270,280,'NO','NO',''],
+[236,'2026-05-30',5,22,'YMATEX S.A.C.','HECTOR',600,108,108,108,250,30,0,0,0,400,200,'NO','NO','']
+];
+
+function parseBuiltin(){
+  return BUILTIN.map(r=>({
+    n:r[0],fecha:r[1],mes:r[2],semana:r[3],
+    empresa_pagador:r[4],conductor:r[5],
+    total_neto:r[6],igv:r[7],total_con_igv:r[8],detraccion:r[9],
+    combustible:r[10],viatico:r[11],conductor_gasto:r[12],peaje:r[13],cochera:r[14],
+    total_gasto:r[15],rentabilidad:r[16],
+    pago_propietario:r[17],pago_factura:r[18],
+    n_factura:r[19]||''
+  }));
+}
+
+// ── FILE LOAD ─────────────────────────────────────────────────────────────────
+function handleFile(e){const f=e.target.files[0];if(f)loadFile(f);e.target.value='';}
+function onDragOver(e){e.preventDefault();document.getElementById('uploadZone').classList.add('dragover');}
+function onDragLeave(){document.getElementById('uploadZone').classList.remove('dragover');}
+function onDrop(e){e.preventDefault();document.getElementById('uploadZone').classList.remove('dragover');const f=e.dataTransfer.files[0];if(f)loadFile(f);}
+
+function loadFile(file){
+  setStatus(`📂 Leyendo "${file.name}"…`);
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary',cellDates:true});
+      const data=parseWorkbook(wb);
+      if(!data.length){setStatus('⚠️ Sin datos válidos. Verifica la estructura.');return;}
+      rawData=data;populateFilters();applyFilters();
+      // Mostrar botón guardar
+      const btn=document.getElementById('btnGuardar');
+      btn.style.display='flex';
+      setStatus(`✅ "${file.name}" — ${data.length} registros | Haz clic en 💾 Guardar Dashboard para conservar los datos.`);
+    }catch(err){setStatus('❌ Error: '+err.message);}
+  };
+  reader.readAsBinaryString(file);
+}
+
+function guardarDashboard(){
+  try{
+    // Serializar rawData al formato BUILTIN
+    const lineas=rawData.map(d=>{
+      const fecha=d.fecha instanceof Date
+        ? d.fecha.toISOString().slice(0,10)
+        : String(d.fecha||'').slice(0,10);
+      const esc=v=>typeof v==='string'?`'${v.replace(/'/g,"\\\'")}'`:v;
+      return `[${d.n},${esc(fecha)},${d.mes||'null'},${d.semana||'null'},${esc(d.empresa_pagador)},${esc(d.conductor)},${d.total_neto},${d.igv},${d.total_con_igv},${d.detraccion},${d.combustible},${d.viatico},${d.conductor_gasto},${d.peaje},${d.cochera},${d.total_gasto},${d.rentabilidad},${esc(d.pago_propietario)},${esc(d.pago_factura)},${esc(d.n_factura||'')}]`;
+    });
+    const nuevoBuiltin=`const BUILTIN=[\n${lineas.join(',\n')}\n];`;
+
+    // Obtener el HTML actual como texto
+    const htmlActual=document.documentElement.outerHTML;
+
+    // Reemplazar el bloque BUILTIN con los datos nuevos
+    const htmlNuevo=htmlActual.replace(/const BUILTIN=\[[\s\S]*?\];/,nuevoBuiltin);
+
+    // Descargar
+    const blob=new Blob([htmlNuevo],{type:'text/html;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    const fecha=new Date().toISOString().slice(0,10);
+    a.href=url;
+    a.download=`dashboard_logistica_${fecha}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setStatus(`✅ Dashboard guardado con ${rawData.length} registros actualizados.`);
+  }catch(err){
+    setStatus('❌ Error al guardar: '+err.message);
+  }
+}
+
+function getISOWeek(date){
+  const d=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate()));
+  const day=d.getUTCDay()||7;
+  d.setUTCDate(d.getUTCDate()+4-day);
+  const y=new Date(Date.UTC(d.getUTCFullYear(),0,1));
+  return Math.ceil((((d-y)/86400000)+1)/7);
+}
+
+function parseWorkbook(wb){
+  const sn=wb.SheetNames.find(s=>s.toUpperCase().includes('CONTROL')||s.toUpperCase().includes('GUIA'))||wb.SheetNames[0];
+  const ws=wb.Sheets[sn];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+  if(!rows||rows.length<3)return[];
+  let hRow=0;
+  for(let i=0;i<Math.min(5,rows.length);i++){
+    const r=rows[i].map(c=>String(c||'').toUpperCase());
+    if(r.some(c=>c.includes('TOTAL NETO')||c.includes('RENTABILIDAD'))){hRow=i;break;}
+  }
+  const hdrs=rows[hRow].map(c=>String(c||'').toUpperCase().replace(/\s+/g,' ').trim());
+  const ci=name=>hdrs.findIndex(h=>h.includes(name));
+  const iN=ci('N°')>-1?ci('N°'):0, iFecha=ci('FECHA')>-1?ci('FECHA'):1,
+    iEmisor=ci('EMPRESA EMISOR')>-1?ci('EMPRESA EMISOR'):2,
+    iCond=ci('PROPIETARIO CONDUCTOR')>-1?ci('PROPIETARIO CONDUCTOR'):5,
+    iNeto=ci('TOTAL NETO')>-1?ci('TOTAL NETO'):7,
+    iComb=ci('COMBUSTIBLE')>-1?ci('COMBUSTIBLE'):8,
+    iViat=ci('VIATICO')>-1?ci('VIATICO'):9,
+    iCondG=ci('CONDUCTOR')>-1?ci('CONDUCTOR'):10,
+    iPeaj=ci('PEAJE')>-1?ci('PEAJE'):11,
+    iCoch=ci('COCHERA')>-1?ci('COCHERA'):12,
+    iGasto=ci('TOTAL GASTO')>-1?ci('TOTAL GASTO'):13,
+    iRent=ci('RENTABILIDAD')>-1?ci('RENTABILIDAD'):14,
+    iIGV=ci('IGV')>-1?ci('IGV'):15,
+    iTotal=hdrs.lastIndexOf('TOTAL')>-1?hdrs.lastIndexOf('TOTAL'):16,
+    iDet=ci('DETRACCION')>-1?ci('DETRACCION'):17,
+    iPagoProp=ci('PAGO PROPIETARIO')>-1?ci('PAGO PROPIETARIO'):18,
+    iPagoFact=ci('PAGO FACTURA')>-1?ci('PAGO FACTURA'):19,
+    iNFactura=ci('N° FACTURA')>-1?ci('N° FACTURA'):ci('NFACTURA')>-1?ci('NFACTURA'):ci('FACTURA')>-1?ci('FACTURA'):-1,
+    iPagador=ci('EMPRESA PAGADOR')>-1?ci('EMPRESA PAGADOR'):21;
+  const data=[];
+  for(let i=hRow+1;i<rows.length;i++){
+    const r=rows[i];
+    if(!r||r.every(c=>c===null||c===''))continue;
+    const nv=parseFloat(r[iN]);
+    if(isNaN(nv)||nv<=0)continue;
+    let fecha=r[iFecha],mes=null,semana=null;
+    let dateObj=null;
+    if(fecha instanceof Date){dateObj=fecha;}
+    else if(typeof fecha==='string'){dateObj=new Date(fecha);}
+    else if(typeof fecha==='number'){dateObj=new Date((fecha-25569)*86400000);}
+    if(dateObj&&!isNaN(dateObj)){mes=dateObj.getMonth()+1;semana=getISOWeek(dateObj);}
+    const n=v=>{const x=parseFloat(v);return isNaN(x)?0:x;};
+    const total_neto=n(r[iNeto]);
+    const igv=n(r[iIGV])||Math.round(total_neto*0.18);
+    const total_con_igv=n(r[iTotal])||total_neto+igv;
+    const detraccion=n(r[iDet]);
+    data.push({n:nv,fecha,mes,semana,
+      empresa_pagador:String(r[iPagador]||r[iEmisor]||'').trim()||'SIN CLIENTE',
+      conductor:String(r[iCond]||'').trim()||'SIN ASIGNAR',
+      total_neto,igv,total_con_igv,detraccion,
+      combustible:n(r[iComb]),viatico:n(r[iViat]),conductor_gasto:n(r[iCondG]),
+      peaje:n(r[iPeaj]),cochera:n(r[iCoch]),
+      total_gasto:n(r[iGasto]),rentabilidad:n(r[iRent]),
+      pago_propietario:String(r[iPagoProp]||'').toUpperCase().trim()||'N/A',
+      pago_factura:String(r[iPagoFact]||'').toUpperCase().trim()||'N/A',
+      n_factura:iNFactura>-1?String(r[iNFactura]||'').trim():'',
+    });
+  }
+  return data;
+}
+
+// ── FILTERS ───────────────────────────────────────────────────────────────────
+function populateFilters(){
+  const semanas=[...new Set(rawData.filter(d=>d.semana).map(d=>d.semana))].sort((a,b)=>a-b);
+  const clientes=[...new Set(rawData.map(d=>d.empresa_pagador))].sort();
+  const conductores=[...new Set(rawData.map(d=>d.conductor))].sort();
+  // Códigos de factura reales (excluye vacíos)
+  const facturas=[...new Set(rawData.map(d=>d.n_factura).filter(v=>v&&v.trim()!==''))].sort();
+  const sel=(id,arr,labelFn)=>{
+    const s=document.getElementById(id);
+    const cur=s.value;
+    s.innerHTML='<option value="todos">Todos</option>'+arr.map(v=>`<option value="${v}">${labelFn?labelFn(v):v}</option>`).join('');
+    if(arr.includes(cur))s.value=cur;
+  };
+  sel('filterSemana',semanas,w=>`Sem ${w}`);
+  sel('filterCliente',clientes);
+  sel('filterConductor',conductores);
+  // Populate facturas select
+  const sf=document.getElementById('filterNFactura');
+  const curF=sf.value;
+  sf.innerHTML='<option value="todos">Todas</option>'+facturas.map(v=>`<option value="${v}">🧾 ${v}</option>`).join('');
+  if(facturas.includes(curF))sf.value=curF;
+}
+
+let sinFacturaActive=false;
+
+function toggleSinFactura(){
+  sinFacturaActive=!sinFacturaActive;
+  const btn=document.getElementById('btnSinFactura');
+  if(sinFacturaActive){
+    btn.style.background='rgba(239,68,68,.18)';
+    btn.style.borderColor='var(--red)';
+    btn.style.color='#fff';
+    // Reset el select de facturas
+    document.getElementById('filterNFactura').value='todos';
+  } else {
+    btn.style.background='var(--surface2)';
+    btn.style.borderColor='rgba(239,68,68,.4)';
+    btn.style.color='var(--red)';
+  }
+  applyFilters();
+}
+
+function onFacturaSelectChange(){
+  // Si se elige un código, desactivar el botón sin factura
+  if(document.getElementById('filterNFactura').value!=='todos'){
+    sinFacturaActive=false;
+    const btn=document.getElementById('btnSinFactura');
+    btn.style.background='var(--surface2)';
+    btn.style.borderColor='rgba(239,68,68,.4)';
+    btn.style.color='var(--red)';
+  }
+  applyFilters();
+}
+
+function applyFilters(){
+  const mes=document.getElementById('filterMes').value;
+  const sem=document.getElementById('filterSemana').value;
+  const cli=document.getElementById('filterCliente').value;
+  const cond=document.getElementById('filterConductor').value;
+  const pagoProp=document.getElementById('filterPagoProp').value;
+  const pagoFact=document.getElementById('filterPagoFact').value;
+  const nFact=document.getElementById('filterNFactura').value;
+  let f=rawData;
+  if(mes!=='todos')f=f.filter(d=>d.mes==mes);
+  if(sem!=='todos')f=f.filter(d=>d.semana==sem);
+  if(cli!=='todos')f=f.filter(d=>d.empresa_pagador===cli);
+  if(cond!=='todos')f=f.filter(d=>d.conductor===cond);
+  if(pagoProp!=='todos')f=f.filter(d=>d.pago_propietario===pagoProp);
+  if(pagoFact!=='todos')f=f.filter(d=>d.pago_factura===pagoFact);
+  // Filtro por código específico de factura
+  if(nFact!=='todos')f=f.filter(d=>d.n_factura===nFact);
+  // Filtro por sin factura (botón toggle)
+  if(sinFacturaActive)f=f.filter(d=>!d.n_factura||d.n_factura.trim()==='');
+  renderDashboard(f);
+}
+
+// ── FORMAT ────────────────────────────────────────────────────────────────────
+const fmt=n=>'S/ '+n.toLocaleString('es-PE',{minimumFractionDigits:0,maximumFractionDigits:0});
+const fmtN=n=>n.toLocaleString('es-PE',{minimumFractionDigits:0,maximumFractionDigits:0});
+const pct=(a,b)=>b>0?((a/b)*100).toFixed(1)+'%':'0%';
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function renderDashboard(data){
+  const sum=key=>data.reduce((s,d)=>s+(d[key]||0),0);
+  const totalVentas=sum('total_neto');
+  const totalCostos=sum('total_gasto');
+  const totalGanancia=totalVentas-totalCostos;
+  const totalIGV=sum('igv');
+  const totalDet=sum('detraccion');
+  const totalFact=sum('total_con_igv');
+  const margen=totalVentas>0?(totalGanancia/totalVentas*100).toFixed(1):0;
+  const roi=totalCostos>0?(totalGanancia/totalCostos*100).toFixed(1):0;
+
+  // KPIs
+  document.getElementById('kpiVentas').textContent=fmt(totalVentas);
+  document.getElementById('kpiCostos').textContent=fmt(totalCostos);
+  document.getElementById('kpiGanancia').textContent=fmt(totalGanancia);
+  document.getElementById('kpiIGV').textContent=fmt(totalIGV);
+  document.getElementById('kpiDetraccion').textContent=fmt(totalDet);
+  document.getElementById('kpiFacturado').textContent=fmt(totalFact);
+  document.getElementById('kpiViajes').textContent=data.length+' viajes';
+  document.getElementById('kpiMargen').textContent=margen+'% margen';
+  document.getElementById('kpiROI').textContent='ROI '+roi+'%';
+  document.getElementById('kpiIGVpct').textContent=totalVentas>0?pct(totalIGV,totalVentas)+' s/neto':'18% s/neto';
+  document.getElementById('kpiDetpct').textContent=totalFact>0?pct(totalDet,totalFact)+' s/total':'4% s/total';
+  document.getElementById('kpiFacturadoPct').textContent='Neto+IGV: '+fmt(totalVentas);
+
+  // KPI Servicios facturados (con N° Factura)
+  const conFactura=data.filter(d=>d.n_factura&&d.n_factura.trim()!=='').length;
+  const sinFactura=data.length-conFactura;
+  const pctFact=data.length>0?((conFactura/data.length)*100).toFixed(0):0;
+  document.getElementById('kpiServFacturados').textContent=`${conFactura} / ${data.length}`;
+  document.getElementById('kpiServFactPct').textContent=`${pctFact}% facturado`;
+  document.getElementById('kpiServPendiente').textContent=`${sinFactura} sin factura`;
+
+  // Aggregate by client
+  const byClient={};
+  data.forEach(d=>{
+    const k=d.empresa_pagador;
+    if(!byClient[k])byClient[k]={ventas:0,costos:0,igv:0,total_igv:0,det:0,viajes:0,facturas_con:0,facturas_sin:0};
+    byClient[k].ventas+=d.total_neto;byClient[k].costos+=d.total_gasto;
+    byClient[k].igv+=d.igv;byClient[k].total_igv+=d.total_con_igv;
+    byClient[k].det+=d.detraccion;byClient[k].viajes++;
+    if(d.n_factura&&d.n_factura.trim()!=='')byClient[k].facturas_con++;
+    else byClient[k].facturas_sin++;
+  });
+  const clients=Object.entries(byClient).sort((a,b)=>b[1].ventas-a[1].ventas);
+
+  // By conductor
+  const byCond={};
+  data.forEach(d=>{
+    if(!byCond[d.conductor])byCond[d.conductor]={viajes:0};
+    byCond[d.conductor].viajes++;
+  });
+  const conductores=Object.entries(byCond).sort((a,b)=>b[1].viajes-a[1].viajes);
+
+  // By month
+  const byMonth={};
+  data.forEach(d=>{
+    if(!d.mes)return;
+    if(!byMonth[d.mes])byMonth[d.mes]={ventas:0,costos:0,servicios:0};
+    byMonth[d.mes].ventas+=d.total_neto;byMonth[d.mes].costos+=d.total_gasto;byMonth[d.mes].servicios++;
+  });
+  const months=Object.entries(byMonth).sort((a,b)=>a[0]-b[0]);
+
+  // By week
+  const byWeek={};
+  data.forEach(d=>{
+    if(!d.semana)return;
+    if(!byWeek[d.semana])byWeek[d.semana]={ventas:0,servicios:0};
+    byWeek[d.semana].ventas+=d.total_neto;byWeek[d.semana].servicios++;
+  });
+  const weeks=Object.entries(byWeek).sort((a,b)=>a[0]-b[0]);
+
+  // Cost breakdown
+  const costBreak={
+    'Combustible':sum('combustible'),'Conductor':sum('conductor_gasto'),
+    'Viático':sum('viatico'),'Peaje':sum('peaje'),'Cochera':sum('cochera'),
+  };
+
+  renderBarCliente(clients);
+  renderDonutViajes(clients);
+  renderLineMensual(months);
+  renderBarMensualServicios(months);
+  renderBarSemanal(weeks);
+  renderDonutCostos(costBreak);
+  renderBarConductor(conductores);
+  renderBarRentabilidad(months);
+  renderTable(clients,totalVentas);
+}
+
+// ── CHART UTILS ───────────────────────────────────────────────────────────────
+function dc(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+const yFmt={ticks:{...TICK,callback:v=>'S/'+fmtN(v)},grid:GRID};
+const xGrid={ticks:{...TICK,maxRotation:28,font:{size:10}},grid:GRID};
+
+// 1. Bar: Ventas vs Costos por cliente
+function renderBarCliente(clients){
+  dc('barCliente');
+  const top=clients.slice(0,9);
+  const lbl=top.map(([k])=>k.length>16?k.substring(0,16)+'…':k);
+  charts['barCliente']=new Chart(document.getElementById('chartBarCliente'),{
+    type:'bar',
+    data:{labels:lbl,datasets:[
+      {label:'Ventas',data:top.map(([,v])=>v.ventas),backgroundColor:'rgba(0,229,255,0.72)',borderRadius:5,borderSkipped:false},
+      {label:'Costos',data:top.map(([,v])=>v.costos),backgroundColor:'rgba(255,107,53,0.72)',borderRadius:5,borderSkipped:false},
+      {label:'Ganancia',data:top.map(([,v])=>v.ventas-v.costos),backgroundColor:'rgba(16,185,129,0.65)',borderRadius:5,borderSkipped:false},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#94a3b8',boxWidth:10,font:{size:11}}},tooltip:{...TT,callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)}`}}},
+      scales:{x:xGrid,y:yFmt}}
+  });
+}
+
+// 2. Donut: Viajes por cliente
+function renderDonutViajes(clients){
+  dc('donutViajes');
+  const top=clients.slice(0,7);
+  charts['donutViajes']=new Chart(document.getElementById('chartDonutViajes'),{
+    type:'doughnut',
+    data:{labels:top.map(([k])=>k),datasets:[{data:top.map(([,v])=>v.viajes),backgroundColor:COLORS,borderWidth:0,hoverOffset:8}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.raw} viajes`}}}}
+  });
+  const total=top.reduce((s,[,v])=>s+v.viajes,0);
+  document.getElementById('donutLegend').innerHTML=top.map(([k,v],i)=>`
+    <div class="flex items-center justify-between gap-1">
+      <div class="flex items-center gap-1.5 min-w-0">
+        <span style="width:7px;height:7px;border-radius:50%;background:${COLORS[i]};flex-shrink:0;display:inline-block"></span>
+        <span class="truncate" style="color:#94a3b8;font-size:.68rem">${k.length>22?k.substring(0,22)+'…':k}</span>
+      </div>
+      <span style="color:#e2e8f0;font-size:.68rem;font-family:monospace;flex-shrink:0">${v.viajes} <span style="color:#64748b">(${pct(v.viajes,total)})</span></span>
+    </div>`).join('');
+}
+
+// 3. Line: Evolución mensual
+function renderLineMensual(months){
+  dc('lineMensual');
+  charts['lineMensual']=new Chart(document.getElementById('chartLineMensual'),{
+    type:'line',
+    data:{labels:months.map(([m])=>MN[m]),datasets:[
+      {label:'Ventas',data:months.map(([,v])=>v.ventas),borderColor:'#00e5ff',backgroundColor:'rgba(0,229,255,0.08)',tension:.4,fill:true,pointBackgroundColor:'#00e5ff',pointRadius:4},
+      {label:'Costos',data:months.map(([,v])=>v.costos),borderColor:'#ff6b35',backgroundColor:'rgba(255,107,53,0.08)',tension:.4,fill:true,pointBackgroundColor:'#ff6b35',pointRadius:4},
+      {label:'Ganancia',data:months.map(([,v])=>v.ventas-v.costos),borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.1)',tension:.4,fill:true,pointBackgroundColor:'#10b981',pointRadius:4},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#94a3b8',boxWidth:10,font:{size:11}}},tooltip:{...TT,callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)}`}}},
+      scales:{x:{ticks:TICK,grid:GRID},y:yFmt}}
+  });
+}
+
+// 4. NEW — Bar: Ventas + Servicios mensuales (dual axis)
+function renderBarMensualServicios(months){
+  dc('barMensualServicios');
+  charts['barMensualServicios']=new Chart(document.getElementById('chartBarMensualServicios'),{
+    type:'bar',
+    data:{labels:months.map(([m])=>MN[m]),datasets:[
+      {label:'Ventas Netas (S/)',data:months.map(([,v])=>v.ventas),backgroundColor:'rgba(0,229,255,0.65)',borderRadius:6,borderSkipped:false,yAxisID:'y'},
+      {label:'N° Servicios',data:months.map(([,v])=>v.servicios),backgroundColor:'rgba(245,158,11,0.75)',borderRadius:6,borderSkipped:false,type:'line',tension:.4,pointBackgroundColor:'#f59e0b',pointRadius:5,fill:false,yAxisID:'y1'},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#94a3b8',boxWidth:10,font:{size:11}}},
+        tooltip:{...TT,callbacks:{label:c=>c.dataset.label.includes('Servicios')?` Servicios: ${c.raw}`:` Ventas: ${fmt(c.raw)}`}}},
+      scales:{
+        x:{ticks:TICK,grid:GRID},
+        y:{...yFmt,position:'left'},
+        y1:{ticks:{...TICK,callback:v=>v+' serv.'},grid:{display:false},position:'right',title:{display:true,text:'N° Servicios',color:'#f59e0b',font:{size:10}}}
+      }}
+  });
+}
+
+// 5. NEW — Bar: Ventas semanales + servicios
+function renderBarSemanal(weeks){
+  dc('barSemanal');
+  charts['barSemanal']=new Chart(document.getElementById('chartBarSemanal'),{
+    type:'bar',
+    data:{labels:weeks.map(([w])=>`Sem ${w}`),datasets:[
+      {label:'Ventas Netas (S/)',data:weeks.map(([,v])=>v.ventas),backgroundColor:weeks.map(([,v],i)=>`rgba(0,229,255,${0.45+0.05*(i%4)})`),borderRadius:5,borderSkipped:false,yAxisID:'y'},
+      {label:'N° Servicios',data:weeks.map(([,v])=>v.servicios),type:'line',borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.15)',tension:.4,fill:true,pointBackgroundColor:'#f59e0b',pointRadius:4,yAxisID:'y1'},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#94a3b8',boxWidth:10,font:{size:11}}},
+        tooltip:{...TT,callbacks:{label:c=>c.dataset.label.includes('Servicios')?` Servicios: ${c.raw}`:` Ventas: ${fmt(c.raw)}`}}},
+      scales:{
+        x:{ticks:{...TICK,font:{size:10}},grid:GRID},
+        y:{...yFmt,position:'left'},
+        y1:{ticks:{...TICK,callback:v=>v+' srv'},grid:{display:false},position:'right'}
+      }}
+  });
+}
+
+// 6. Donut: Desglose costos
+function renderDonutCostos(cb){
+  dc('donutCostos');
+  const entries=Object.entries(cb).filter(([,v])=>v>0);
+  const cl=['#ff6b35','#7c3aed','#f59e0b','#3b82f6','#10b981'];
+  charts['donutCostos']=new Chart(document.getElementById('chartDonutCostos'),{
+    type:'doughnut',
+    data:{labels:entries.map(([k])=>k),datasets:[{data:entries.map(([,v])=>v),backgroundColor:cl,borderWidth:0,hoverOffset:6}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'62%',
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${fmt(c.raw)}`}}}}
+  });
+  const total=entries.reduce((s,[,v])=>s+v,0);
+  document.getElementById('costosLegend').innerHTML=entries.map(([k,v],i)=>`
+    <div class="flex items-center justify-between gap-1">
+      <div class="flex items-center gap-1.5"><span style="width:7px;height:7px;border-radius:50%;background:${cl[i]};display:inline-block"></span>
+      <span style="color:#94a3b8;font-size:.68rem">${k}</span></div>
+      <span style="color:#e2e8f0;font-size:.68rem;font-family:monospace">${pct(v,total)}</span>
+    </div>`).join('');
+}
+
+// 7. Bar horizontal: Conductores
+function renderBarConductor(conductores){
+  dc('barConductor');
+  const top=conductores.slice(0,8);
+  charts['barConductor']=new Chart(document.getElementById('chartBarConductor'),{
+    type:'bar',
+    data:{labels:top.map(([k])=>k),datasets:[{label:'Viajes',data:top.map(([,v])=>v.viajes),backgroundColor:COLORS.slice(0,top.length).map(c=>c+'bb'),borderRadius:5,borderSkipped:false}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.raw} viajes`}}},
+      scales:{x:{ticks:TICK,grid:GRID},y:{ticks:{...TICK,font:{size:11}},grid:{display:false}}}}
+  });
+}
+
+// 8. Bar: Rentabilidad mensual
+function renderBarRentabilidad(months){
+  dc('barRent');
+  charts['barRent']=new Chart(document.getElementById('chartBarRent'),{
+    type:'bar',
+    data:{labels:months.map(([m])=>MN[m]),datasets:[
+      {label:'Ventas',data:months.map(([,v])=>v.ventas),backgroundColor:'rgba(0,229,255,0.25)',borderRadius:6,borderSkipped:false},
+      {label:'Ganancia',data:months.map(([,v])=>v.ventas-v.costos),backgroundColor:'rgba(16,185,129,0.75)',borderRadius:6,borderSkipped:false},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#94a3b8',boxWidth:10,font:{size:11}}},tooltip:{...TT,callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)}`}}},
+      scales:{x:{ticks:TICK,grid:GRID},y:yFmt}}
+  });
+}
+
+// Table
+function renderTable(clients,totalVentas){
+  // Build per-client factura stats from filtered data
+  const facturaByClient={};
+  clients.forEach(([k])=>{facturaByClient[k]={con:0,sin:0,nums:[]};});
+
+  const rows=clients.map(([k,v])=>{
+    const gan=v.ventas-v.costos;
+    const mg=v.ventas>0?(gan/v.ventas*100).toFixed(1):0;
+    const part=totalVentas>0?(v.ventas/totalVentas*100):0;
+    const mc=mg>=50?'var(--green)':mg>=20?'var(--yellow)':'var(--red)';
+    const fb=v.facturas_con||0;
+    const ft=fb+(v.facturas_sin||0);
+    const factTag=ft>0?
+      `<span class="n-factura-tag ${fb===ft?'n-factura-si':'n-factura-no'}">${fb===ft?'✓':'⚠'} ${fb}/${ft}</span>`:
+      `<span class="n-factura-tag n-factura-no">— sin datos</span>`;
+    return `<tr>
+      <td style="color:var(--text);font-family:'Space Grotesk';font-size:.78rem">${k}</td>
+      <td style="color:var(--accent)">${v.viajes}</td>
+      <td style="color:var(--accent)">${fmt(v.ventas)}</td>
+      <td style="color:var(--yellow)">${fmt(v.igv)}</td>
+      <td style="color:var(--accent3)">${fmt(v.total_igv)}</td>
+      <td style="color:#ec4899">${fmt(v.det)}</td>
+      <td style="color:var(--accent2)">${fmt(v.costos)}</td>
+      <td style="color:var(--green)">${fmt(gan)}</td>
+      <td style="color:${mc}">${mg}%</td>
+      <td>${factTag}</td>
+      <td style="min-width:90px">
+        <div class="flex items-center gap-2">
+          <div class="prog-bar flex-1"><div class="prog-fill" style="width:${part.toFixed(1)}%;background:var(--accent)"></div></div>
+          <span style="font-size:.65rem;color:var(--muted);flex-shrink:0">${part.toFixed(1)}%</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('tableClientesBody').innerHTML=rows;
+}
+
+function setStatus(msg){document.getElementById('statusText').textContent=msg;}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded',()=>{
+  rawData=parseBuiltin();
+  populateFilters();
+  applyFilters();
+  setStatus(`✅ Datos iniciales cargados — ${rawData.length} registros | Ene–May 2026 | Sube un Excel actualizado para refrescar en cualquier momento.`);
+});
+</script>
+
+
+</body></html>
